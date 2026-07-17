@@ -58,6 +58,7 @@ set(CLIENT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/compress.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/checkpoint.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/client_callback.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/client.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/routing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/memcpy.cpp
@@ -163,6 +164,7 @@ else()
         ${CMAKE_CURRENT_SOURCE_DIR}/h2.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rpc.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/compress.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/client_callback.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/h2_test.cpp
     )
     add_executable(h2_test ${H2_TEST_SOURCES})
