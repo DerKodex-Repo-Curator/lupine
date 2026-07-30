@@ -1,0 +1,29 @@
+{
+  "name": "lupine-dev",
+  "build": {
+    "context": "..",
+    "dockerfile": "Dockerfile",
+    "args": {
+      "CUDA_VERSION": "13.1.0",
+      "UBUNTU_VERSION": "24.04"
+    }
+  },
+  "workspaceFolder": "/workspaces/lupine",
+  "forwardPorts": [14833],
+  "postCreateCommand": "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs -DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "ms-python.python"
+      ],
+      "settings": {
+        "cmake.configureOnOpen": false,
+        "cmake.generator": "Ninja",
+        "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+        "python.defaultInterpreterPath": "/usr/bin/python3"
+      }
+    }
+  }
+}
