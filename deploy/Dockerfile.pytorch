@@ -1,0 +1,31 @@
+# PyTorch on a CPU-only / arm64 host, GPU-forwarded via lupine.
+#
+# PyTorch's CPU-only wheel dlopens libcuda.so.1 LAZILY (only when you call a
+# CUDA API), so the lupine shim intercepts those calls and forwards them to the
+# remote server. This is the safe path on arm64 — see deploy/README.md ->
+# "arm64 gotcha". Do NOT install a CUDA-enabled torch wheel on the client; it
+# would link against libcuda.so.1 at import time and may pull symbols the slim
+# shim doesn't export.
+#
+# No CMD is provided: supply your own entrypoint / command from compose or
+# `docker run`.
+#
+# Build:
+#   docker build -f deploy/Dockerfile.pytorch -t lupine-pytorch:cuda-13.1 .
+# Run:
+#   docker run --rm -e LUPINE_SERVER=gpu-host-a:14833 lupine-pytorch:cuda-13.1 \
+#     python3 -c "import torch; print(torch.cuda.is_available())"
+FROM registry.xaas.ar/lupine-client:cuda-13.1.0-ubuntu24.04-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# CUDA-enabled PyTorch wheel. PyTorch dlopens libcuda.so.1 lazily (only on
+# CUDA API calls), so the lupine shim intercepts those and forwards to the
+# remote server. The CUDA wheel bundles its own runtime libs (cudart, cublas,
+# etc.) but uses libcuda.so.1 (the driver) — which is the lupine shim.
+RUN pip3 install --break-system-packages torch numpy
+
+# LUPINE_SERVER must be supplied at runtime via `docker run -e` or compose
+# `environment:`. It is read once on first CUDA init; see deploy/README.md.

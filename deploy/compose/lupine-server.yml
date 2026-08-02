@@ -1,0 +1,50 @@
+# GPU-host server stack for lupine.
+# Run this on machines that own NVIDIA GPUs and expose them to CPU-only / arm64
+# clients over HTTP/2.
+#
+# The server has NO HTTP health endpoint, so the healthcheck is a bare TCP
+# connect against 14833. Adjust the tsdproxy labels to match your instance's
+# config (see deploy/README.md -> "tsdproxy labels").
+services:
+  lupine-server:
+    image: registry.xaas.ar/lupine-server:cuda-13.1.0-ubuntu24.04
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [compute, utility]
+    environment:
+      # Server listen port. The Dockerfile already defaults this to 14833; set
+      # it here so the published port and the server stay in sync.
+      - LUPINE_PORT=14833
+      # Trace logging: 0 off, 1 stdout, 2 stderr, other = file path.
+      # - LUPINE_TRACE=1
+      # Stable session id for checkpoint restore across restarts.
+      # - LUPINE_SESSION=lupine-gpu-host-a
+    ports:
+      - "14833:14833"
+    healthcheck:
+      # No HTTP endpoint exists; just probe the TCP port.
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/14833' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - proxy
+    labels:
+      # tsdproxy MagicDNS + TLS reverse proxy. Exact label format depends on
+      # your tsdproxy config — see deploy/README.md.
+      - "tsdproxy.enable=true"
+      - "tsdproxy.name=lupine-server"
+      - "tsdproxy.port=14833"
+
+networks:
+  # External network created by your reverse proxy (tsdproxy, NPM, Traefik...).
+  # If you don't run a proxy, drop the `networks` block or change it to a
+  # bridge you create yourself: `docker network create proxy`.
+  proxy:
+    external: true

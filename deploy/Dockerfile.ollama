@@ -1,0 +1,29 @@
+# Ollama on a CPU-only / arm64 host, GPU-forwarded via lupine.
+#
+# Ollama bundles its own CUDA runtime libraries, so it only needs the
+# libcuda.so.1 SHIM that the lupine client-slim image already provides. No
+# --gpus flag, no LD_PRELOAD: the slim image sets LD_LIBRARY_PATH=/opt/lupine/lib
+# so the shim is found first.
+#
+# Build:
+#   docker build -f deploy/Dockerfile.ollama -t lupine-ollama:cuda-13.1 .
+# Run (point at a GPU-host server):
+#   docker run --rm -e LUPINE_SERVER=gpu-host-a:14833 -p 11434:11434 lupine-ollama:cuda-13.1
+FROM registry.xaas.ar/lupine-client:cuda-13.1.0-ubuntu24.04-slim
+
+# Ollama's installer expects a UTF-8 locale and curl.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Official installer drops the ollama binary and sets up the systemd unit; we
+# only need the binary inside a container.
+RUN curl -fsSL https://ollama.com/install.sh | sh
+
+ENV OLLAMA_HOST=0.0.0.0:11434
+
+EXPOSE 11434
+
+# LUPINE_SERVER must be supplied at runtime via `docker run -e` or compose
+# `environment:`. It is read once on first CUDA init; see deploy/README.md.
+CMD ["ollama", "serve"]

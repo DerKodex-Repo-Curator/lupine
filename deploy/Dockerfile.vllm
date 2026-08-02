@@ -1,0 +1,32 @@
+# vLLM on a CPU-only / arm64 host, GPU-forwarded via lupine.
+#
+# vLLM is the most demanding of the three app images. It may need CUDA runtime
+# symbols that the slim client shim does not export. If the build or a smoke
+# run fails with a missing CUDA runtime symbol (e.g. cudart, cublas), fall back
+# to the FULL client image which keeps the CUDA runtime libraries:
+#
+#   FROM registry.xaas.ar/lupine-client:cuda-13.1.0-ubuntu24.04
+#
+# See deploy/README.md -> "vLLM on slim: fallback".
+#
+# Build:
+#   docker build -f deploy/Dockerfile.vllm -t lupine-vllm:cuda-13.1 .
+# Run (CMD/entrypoint provided by compose or `docker run`):
+#   docker run --rm -e LUPINE_SERVER=gpu-host-a:14833 -p 8000:8000 \
+#     lupine-vllm:cuda-13.1 \
+#     vllm serve Qwen/Qwen2.5-0.5B --host 0.0.0.0 --port 8000
+FROM registry.xaas.ar/lupine-client:cuda-13.1.0-ubuntu24.04-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# vLLM pulls its own CUDA-aware deps via pip; if a runtime symbol is missing,
+# switch the FROM line to the full client image (see header comment).
+RUN pip3 install --break-system-packages vllm
+
+EXPOSE 8000
+
+# No CMD — supply `vllm serve <model> ...` from compose or `docker run`.
+# LUPINE_SERVER must be supplied at runtime via `docker run -e` or compose
+# `environment:`. It is read once on first CUDA init; see deploy/README.md.

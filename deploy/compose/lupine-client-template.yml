@@ -1,0 +1,54 @@
+# Reusable client stack template for lupine.
+#
+# This file is a TEMPLATE. Copy it, point `build.dockerfile` at one of the app
+# Dockerfiles under deploy/ (or your own), and set LUPINE_SERVER via a .env file
+# or `environment`.
+#
+# ── LUPINE_SERVER is read ONCE on the first CUDA init ────────────────────────
+# The client reads LUPINE_SERVER a single time when the process loads the CUDA
+# driver. It MUST be a compose `environment:` value (or baked into the image);
+# runtime overrides (e.g. `docker exec ... export LUPINE_SERVER=...`) are NOT
+# picked up by the running process. Restart the container to change it.
+#
+# ── Endpoint forms ───────────────────────────────────────────────────────────
+# Direct (plaintext):   LUPINE_SERVER=gpu-host-a:14833
+# TLS via reverse proxy: LUPINE_SERVER=https://lupine-server.magicdns.dev
+#   (https:// enables TLS and defaults the port to 443)
+# Multi-server:          LUPINE_SERVER=gpu-host-a:14833,gpu-host-b:14833
+#   (devices are exposed as one local ordinal list in server order)
+#
+# ── arm64 gotcha ─────────────────────────────────────────────────────────────
+# arm64 hosts must use the slim client + apps that dlopen libcuda.so.1
+# lazily (e.g. PyTorch CPU-only wheels). Apps that link against libcuda.so.1 at
+# build time will fail to load on arm64. See deploy/README.md -> "arm64".
+services:
+  lupine-app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.pytorch   # ollama | pytorch | vllm | your own
+    # LUPINE_SERVER is REQUIRED and must be set here (or via .env). Example
+    # values for each mode are shown commented out — uncomment ONE.
+    environment:
+      - LUPINE_SERVER=gpu-host-a:14833
+      # - LUPINE_SERVER=https://lupine-server.magicdns.dev
+      # - LUPINE_SERVER=gpu-host-a:14833,gpu-host-b:14833
+      # Trace logging (optional): 0 off, 1 stdout, 2 stderr, other = file path.
+      # - LUPINE_TRACE=1
+    # No --gpus flag on the client: this is a CPU-only / arm64 host. The lupine
+    # shim intercepts CUDA calls and forwards them over HTTP/2 to the server.
+    restart: unless-stopped
+    networks:
+      - proxy
+
+# Provide LUPINE_SERVER without editing this file:
+#   cp .env.example .env  &&  edit .env
+# Compose auto-loads variables from .env in the same directory. The
+# `environment:` block above takes precedence over .env for the same key, so
+# comment out the inline value when relying on .env.
+#
+# Minimal .env:
+#   LUPINE_SERVER=gpu-host-a:14833
+
+networks:
+  proxy:
+    external: true
