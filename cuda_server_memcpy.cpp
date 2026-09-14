@@ -176,6 +176,7 @@ struct lupine_graph_resources {
     for (auto *node = dtoh_copies.load(std::memory_order_acquire);
          node != nullptr; node = node->next) {
       copies.push_back(node->copy);
+      lupine_forget_undelivered_dtoh(node->copy.server_src);
     }
     std::reverse(copies.begin(), copies.end());
     return copies;
@@ -451,6 +452,66 @@ void lupine_graph_note_dtoh_copy(lupine_graph_resources *resources,
   resources->add_dtoh_copy({client_dst, server_src, bytes});
 }
 
+// A DtoH the stream has executed whose bytes have not been delivered to the
+// client yet. Set from a host callback queued behind the copy, so it reflects
+// execution order (and re-arms on every graph replay), not enqueue order;
+// forgotten when the bytes are delivered.
+struct lupine_undelivered_dtoh {
+  conn_t *conn = nullptr;
+  void *client_dst = nullptr;
+  void *server_src = nullptr;
+  size_t bytes = 0;
+  // Graph host-node data lives as long as the graph resources.
+  bool persistent = false;
+};
+
+static std::mutex &lupine_undelivered_dtoh_mutex() {
+  static auto *mutex = new std::mutex();
+  return *mutex;
+}
+
+static std::vector<lupine_undelivered_dtoh> &lupine_undelivered_dtoh_list() {
+  static auto *list = new std::vector<lupine_undelivered_dtoh>();
+  return *list;
+}
+
+void lupine_forget_undelivered_dtoh(const void *server_src) {
+  std::lock_guard<std::mutex> lock(lupine_undelivered_dtoh_mutex());
+  auto &list = lupine_undelivered_dtoh_list();
+  list.erase(
+      std::remove_if(list.begin(), list.end(),
+                     [server_src](const lupine_undelivered_dtoh &undelivered) {
+                       return undelivered.server_src == server_src;
+                     }),
+      list.end());
+}
+
+static void CUDA_CB lupine_dtoh_undelivered_callback(void *opaque) {
+  auto *undelivered = static_cast<lupine_undelivered_dtoh *>(opaque);
+  lupine_forget_undelivered_dtoh(undelivered->server_src);
+  try {
+    std::lock_guard<std::mutex> lock(lupine_undelivered_dtoh_mutex());
+    lupine_undelivered_dtoh_list().push_back(*undelivered);
+  } catch (...) {
+    LUPINE_LOG_ERROR("Failed to record an undelivered DtoH copy");
+  }
+  if (!undelivered->persistent) {
+    delete undelivered;
+  }
+}
+
+static void lupine_note_dtoh_undelivered(conn_t *conn, CUstream stream,
+                                         void *client_dst, void *server_src,
+                                         size_t bytes, bool persistent) {
+  auto *undelivered = new (std::nothrow)
+      lupine_undelivered_dtoh{conn, client_dst, server_src, bytes, persistent};
+  if (undelivered != nullptr &&
+      cuLaunchHostFunc(stream, lupine_dtoh_undelivered_callback, undelivered) !=
+          CUDA_SUCCESS) {
+    delete undelivered;
+  }
+}
+
 struct lupine_htod_fragment {
   size_t logical_offset = 0;
   size_t bytes = 0;
@@ -534,6 +595,50 @@ struct lupine_htod_callback_data {
   std::shared_ptr<lupine_htod_graph_execution> graph_execution;
   std::shared_ptr<lupine_htod_capture_events> capture_events;
 };
+
+// Lay every undelivered DtoH overlapping this fragment's client source over the
+// ring in execution order, and report whether one of them covered all of it.
+static bool
+lupine_overlay_undelivered_dtoh(conn_t *conn, const lupine_htod_copy &copy,
+                                const lupine_htod_fragment &fragment,
+                                unsigned char *ring) {
+  bool covered = false;
+  std::lock_guard<std::mutex> lock(lupine_undelivered_dtoh_mutex());
+  for (const auto &undelivered : lupine_undelivered_dtoh_list()) {
+    if (undelivered.conn != conn) {
+      continue;
+    }
+    uintptr_t undelivered_begin =
+        reinterpret_cast<uintptr_t>(undelivered.client_dst);
+    uintptr_t undelivered_end = undelivered_begin + undelivered.bytes;
+    bool covers = true;
+    size_t offset = fragment.logical_offset;
+    size_t remaining = fragment.bytes;
+    while (remaining != 0) {
+      size_t row_index = offset / copy.smemcpy.width;
+      size_t x = offset - row_index * copy.smemcpy.width;
+      size_t slice = row_index / copy.smemcpy.rows;
+      size_t row = row_index - slice * copy.smemcpy.rows;
+      size_t chunk = std::min(remaining, copy.smemcpy.width - x);
+      uintptr_t begin = reinterpret_cast<uintptr_t>(copy.source) +
+                        slice * copy.source_slice_stride +
+                        row * copy.source_row_stride + x;
+      uintptr_t lo = std::max(begin, undelivered_begin);
+      uintptr_t hi = std::min(begin + chunk, undelivered_end);
+      if (lo < hi) {
+        memcpy(ring + (offset - fragment.logical_offset) + (lo - begin),
+               static_cast<const unsigned char *>(undelivered.server_src) +
+                   (lo - undelivered_begin),
+               hi - lo);
+      }
+      covers = covers && lo == begin && hi == begin + chunk;
+      offset += chunk;
+      remaining -= chunk;
+    }
+    covered = covered || covers;
+  }
+  return covered;
+}
 
 // Each CUDA host callback fetches one bounded fragment into this ring and
 // returns. The following copy runs on the same private stream, so slot reuse is
@@ -715,6 +820,13 @@ public:
 
   int fetch(const lupine_htod_copy &copy,
             const lupine_htod_fragment &fragment) {
+    // A DtoH queued ahead of this copy has executed by now but only reaches
+    // the client at its next sync, so its bytes are read here, not there.
+    auto *ring = static_cast<unsigned char *>(
+        data(ring_offset(copy, fragment.logical_offset)));
+    if (lupine_overlay_undelivered_dtoh(conn_, copy, fragment, ring)) {
+      return 0;
+    }
     if (rpc_write_start_request(conn_, LUPINE_SIDE_EFFECT_READ_HOST_MEMORY) <
             0 ||
         rpc_write(conn_, &copy.source, sizeof(copy.source)) < 0 ||
@@ -734,11 +846,11 @@ public:
       return -1;
     }
 
-    if (rpc_read(conn_, data(ring_offset(copy, fragment.logical_offset)),
-                 fragment.bytes) < 0) {
+    if (rpc_read(conn_, ring, fragment.bytes) < 0 || rpc_read_end(conn_) < 0) {
       return -1;
     }
-    return rpc_read_end(conn_) < 0 ? -1 : 0;
+    lupine_overlay_undelivered_dtoh(conn_, copy, fragment, ring);
+    return 0;
   }
 
 private:
@@ -3000,6 +3112,8 @@ int handle_cuMemcpyDtoHAsync_v2(conn_t *conn) {
       result = cuMemcpyDtoHAsync_v2(host, srcDevice, byteCount, stream);
       if (result == CUDA_SUCCESS) {
         lupine_graph_note_dtoh_copy(resources, dstHost, host, byteCount);
+        lupine_note_dtoh_undelivered(conn, stream, dstHost, host, byteCount,
+                                     true);
       }
       host = nullptr;
     }
@@ -3024,6 +3138,8 @@ int handle_cuMemcpyDtoHAsync_v2(conn_t *conn) {
               streams[stream].push_back(copy);
             },
             lupine_pending_dtoh_streams{});
+        lupine_note_dtoh_undelivered(conn, stream, dstHost, host, byteCount,
+                                     false);
         host = nullptr;
       }
     }
