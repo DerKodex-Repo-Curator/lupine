@@ -229,6 +229,7 @@ PRIVATE_RPC_FUNCTIONS = [
     "lupineFunctionAttributeSnapshot",
     "lupineFunctionParamLayoutSnapshot",
     "lupineManagedHostFlush",
+    "lupineMemcpyDtoHAsyncPinned",
     "lupineStreamPoolInit",
 ]
 
