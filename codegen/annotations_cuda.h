@@ -1481,6 +1481,7 @@ CUresult cuPointerGetAttributes(unsigned int numAttributes,
                                 CUpointer_attribute *attributes, void **data,
                                 CUdeviceptr ptr);
 /**
+ * @disabled client - manual client hands out pooled streams
  * @routingkey CURRENT_CONTEXT
  * @recordowner STREAM phStream
  * @param phStream SEND_RECV
@@ -1488,6 +1489,7 @@ CUresult cuPointerGetAttributes(unsigned int numAttributes,
  */
 CUresult cuStreamCreate(CUstream *phStream, unsigned int Flags);
 /**
+ * @disabled client - manual client hands out pooled streams
  * @routingkey CURRENT_CONTEXT
  * @recordowner STREAM phStream
  * @param phStream SEND_RECV
@@ -3328,6 +3330,8 @@ void cuGraphConditionalHandleCreate();
 void cuGraphAddNode_v2();
 /** @disabled */
 void lupineEventQueryBatch();
+/** @disabled */
+void lupineStreamPoolInit();
 /** @disabled */
 void cuStreamBeginCaptureToGraph();
 /** @disabled handle_cuStreamUpdateCaptureDependencies */
