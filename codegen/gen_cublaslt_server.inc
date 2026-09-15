@@ -389,38 +389,6 @@ ERROR_0:
   return -1;
 }
 
-int handle_cublasLtLoggerOpenFile(conn_t *conn) {
-  const char *logFile = nullptr;
-  std::size_t logFile_len;
-  int request_id;
-  cublasStatus_t return_value;
-  using fn_t = cublasStatus_t (*)(const char *);
-  fn_t fn = nullptr;
-  if (rpc_read(conn, &logFile_len, sizeof(std::size_t)) < 0)
-    goto ERROR_0;
-  logFile = (const char *)malloc(logFile_len);
-  if ((logFile_len != 0 && logFile == nullptr) ||
-      rpc_read(conn, (void *)logFile, logFile_len) < 0 || false)
-    goto ERROR_0;
-
-  request_id = rpc_read_end(conn);
-  if (request_id < 0)
-    goto ERROR_0;
-
-  fn = cublaslt_symbol<fn_t>("cublasLtLoggerOpenFile");
-  return_value = fn == nullptr ? function_not_found() : fn(logFile);
-
-  if (rpc_write_start_response(conn, request_id) < 0 ||
-      rpc_write(conn, &return_value, sizeof(cublasStatus_t)) < 0 ||
-      rpc_write_end(conn) < 0)
-    goto ERROR_0;
-  free((void *)logFile);
-  return 0;
-ERROR_0:
-  free((void *)logFile);
-  return -1;
-}
-
 int handle_cublasLtLoggerSetLevel(conn_t *conn) {
   int level;
   int request_id;

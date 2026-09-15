@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -311,4 +312,87 @@ extern "C" const char *cublasLtGetStatusName(cublasStatus_t status) {
 
 extern "C" const char *cublasLtGetStatusString(cublasStatus_t status) {
   return status_text(RPC_cublasLtGetStatusString, status);
+}
+
+namespace {
+void log_callback(void *user_data, int level, const char *function,
+                  const char *message, size_t) {
+  reinterpret_cast<cublasLtLoggerCallback_t>(user_data)(level, function,
+                                                        message);
+}
+
+void log_file(void *user_data, int level, const char *function,
+              const char *message, size_t) {
+  auto *file = static_cast<FILE *>(user_data);
+  static const char *levels[] = {"Off",   "Error", "Trace",
+                                 "Hints", "Info",  "Api"};
+  const char *name = level >= 0 && level <= 5 ? levels[level] : "Unknown";
+  std::fprintf(file, "[cublasLt][%s][%s] %s\n", name, function, message);
+  std::fflush(file);
+}
+
+std::recursive_mutex log_files_mutex;
+std::unordered_map<conn_t *, std::shared_ptr<FILE>> owned_log_files;
+
+cublasStatus_t set_log_file(FILE *file, std::shared_ptr<FILE> owned) {
+  library_log_target target;
+  if (file != nullptr) {
+    target = {log_file, file};
+  }
+  conn_t *conn = connection();
+  cublasStatus_t status = rpc_error();
+  // A callback can replace the file from inside rpc_read_end. Publish the new
+  // ownership first and keep the previous file alive until all its logs drain.
+  std::lock_guard<std::recursive_mutex> lock(log_files_mutex);
+  auto previous = owned_log_files[conn];
+  if (conn == nullptr ||
+      rpc_write_start_request(conn, RPC_cublasLtLoggerSetFile) < 0 ||
+      rpc_write(conn, &target.callback, sizeof(target.callback)) < 0 ||
+      rpc_write(conn, &target.user_data, sizeof(target.user_data)) < 0 ||
+      rpc_wait_for_response(conn) < 0 ||
+      rpc_read(conn, &status, sizeof(status)) < 0) {
+    return rpc_error();
+  }
+  if (status == CUBLAS_STATUS_SUCCESS) {
+    owned_log_files[conn] = std::move(owned);
+  }
+  if (rpc_read_end(conn) < 0) {
+    return rpc_error();
+  }
+  return status;
+}
+} // namespace
+
+extern "C" cublasStatus_t
+cublasLtLoggerSetCallback(cublasLtLoggerCallback_t callback) {
+  library_log_target target;
+  if (callback != nullptr) {
+    target = {log_callback, reinterpret_cast<void *>(callback)};
+  }
+  conn_t *conn = connection();
+  cublasStatus_t status = rpc_error();
+  if (conn == nullptr ||
+      rpc_write_start_request(conn, RPC_cublasLtLoggerSetCallback) < 0 ||
+      rpc_write(conn, &target.callback, sizeof(target.callback)) < 0 ||
+      rpc_write(conn, &target.user_data, sizeof(target.user_data)) < 0 ||
+      rpc_wait_for_response(conn) < 0 ||
+      rpc_read(conn, &status, sizeof(status)) < 0 || rpc_read_end(conn) < 0) {
+    return rpc_error();
+  }
+  return status;
+}
+
+extern "C" cublasStatus_t cublasLtLoggerSetFile(FILE *file) {
+  return set_log_file(file, {});
+}
+
+extern "C" cublasStatus_t cublasLtLoggerOpenFile(const char *logFile) {
+  if (logFile == nullptr) {
+    return CUBLAS_STATUS_INVALID_VALUE;
+  }
+  FILE *file = std::fopen(logFile, "w");
+  if (file == nullptr) {
+    return CUBLAS_STATUS_INVALID_VALUE;
+  }
+  return set_log_file(file, std::shared_ptr<FILE>(file, std::fclose));
 }

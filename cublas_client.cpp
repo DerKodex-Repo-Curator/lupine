@@ -6,8 +6,7 @@
 // the three APIs ordered. Nearly all of the surface is generated. The calls
 // in this file carry something the generated marshalling cannot: a host
 // vector or matrix with a stride, a static string, or a result that is not a
-// status. A callback into the client is a generated stub that returns
-// CUBLAS_STATUS_NOT_SUPPORTED.
+// status. Logger callbacks return through the driver shim's side-effect lane.
 
 #include <cublasXt.h>
 #include <cublas_v2.h>
@@ -288,6 +287,52 @@ extern "C" cublasStatus_t cublasLoggerConfigure(int logIsOn, int logToStdOut,
       rpc_wait_for_response(conn) < 0 ||
       rpc_read(conn, &status, sizeof(status)) < 0 || rpc_read_end(conn) < 0) {
     return rpc_error();
+  }
+  return status;
+}
+
+namespace {
+void log_callback(void *user_data, int, const char *, const char *message,
+                  size_t) {
+  reinterpret_cast<cublasLogCallback>(user_data)(message);
+}
+} // namespace
+
+extern "C" cublasStatus_t cublasSetLoggerCallback(cublasLogCallback callback) {
+  library_log_target target;
+  if (callback != nullptr) {
+    target = {log_callback, reinterpret_cast<void *>(callback)};
+  }
+  conn_t *conn = connection();
+  cublasStatus_t status = rpc_error();
+  if (conn == nullptr ||
+      rpc_write_start_request(conn, RPC_cublasSetLoggerCallback) < 0 ||
+      rpc_write(conn, &target.callback, sizeof(target.callback)) < 0 ||
+      rpc_write(conn, &target.user_data, sizeof(target.user_data)) < 0 ||
+      rpc_wait_for_response(conn) < 0 ||
+      rpc_read(conn, &status, sizeof(status)) < 0 || rpc_read_end(conn) < 0) {
+    return rpc_error();
+  }
+  return status;
+}
+
+extern "C" cublasStatus_t
+cublasGetLoggerCallback(cublasLogCallback *userCallback) {
+  if (userCallback == nullptr) {
+    return CUBLAS_STATUS_INVALID_VALUE;
+  }
+  conn_t *conn = connection();
+  void *callback = nullptr;
+  cublasStatus_t status = rpc_error();
+  if (conn == nullptr ||
+      rpc_write_start_request(conn, RPC_cublasGetLoggerCallback) < 0 ||
+      rpc_wait_for_response(conn) < 0 ||
+      rpc_read(conn, &callback, sizeof(callback)) < 0 ||
+      rpc_read(conn, &status, sizeof(status)) < 0 || rpc_read_end(conn) < 0) {
+    return rpc_error();
+  }
+  if (status == CUBLAS_STATUS_SUCCESS) {
+    *userCallback = reinterpret_cast<cublasLogCallback>(callback);
   }
   return status;
 }
