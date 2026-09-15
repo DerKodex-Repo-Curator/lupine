@@ -3147,4 +3147,8 @@
 #define LUPINE_RPC_lupineFunctionParamLayoutSnapshot 1930405904
 #define LUPINE_RPC_lupineManagedHostFlush 1450411892
 #define LUPINE_RPC_lupineMemcpyDtoHAsyncPinned 160311540
+#define LUPINE_RPC_lupineBulkChunk 748924565
+#define LUPINE_RPC_lupineMemcpyHtoDBulk 1887368726
+#define LUPINE_RPC_lupineBulkRead 1532818193
+#define LUPINE_RPC_lupineMemcpyDtoHBulk 1646333528
 #define LUPINE_RPC_lupineStreamPoolInit 394532239
