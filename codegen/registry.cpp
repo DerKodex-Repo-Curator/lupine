@@ -3166,6 +3166,11 @@ LUPINE_DECLARE_HANDLER(RPC_cublasZtrsv_v2_64, handle_cublasZtrsv_v2_64,
                        rpc_backend::cublas)
 #endif
 LUPINE_CUBLASLT_RPC_HANDLERS(LUPINE_DECLARE_HANDLER)
+#if CUBLAS_VERSION >= 130100
+LUPINE_DECLARE_HANDLER(RPC_lupineCublasLtEmulationDescCopy,
+                       handle_lupineCublasLtEmulationDescCopy,
+                       rpc_backend::cublas)
+#endif
 #if CUBLAS_VERSION >= 120900
 LUPINE_DECLARE_HANDLER(RPC_cublasLtDisableCpuInstructionsSetMask,
                        handle_cublasLtDisableCpuInstructionsSetMask,
@@ -4430,6 +4435,9 @@ const rpc_handler_registry &lupine_rpc_handlers() {
       LUPINE_REGISTER_HANDLER(RPC_cublasZtrsv_v2_64, handle_cublasZtrsv_v2_64, rpc_backend::cublas)
 #endif
       LUPINE_CUBLASLT_RPC_HANDLERS(LUPINE_REGISTER_HANDLER)
+#if CUBLAS_VERSION >= 130100
+      LUPINE_REGISTER_HANDLER(RPC_lupineCublasLtEmulationDescCopy, handle_lupineCublasLtEmulationDescCopy, rpc_backend::cublas)
+#endif
 #if CUBLAS_VERSION >= 120900
       LUPINE_REGISTER_HANDLER(RPC_cublasLtDisableCpuInstructionsSetMask, handle_cublasLtDisableCpuInstructionsSetMask, rpc_backend::cublas)
 #endif
