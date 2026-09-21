@@ -991,10 +991,6 @@ int handle___cudaRegisterFunction(conn_t *conn) {
        grid_dim_present != nullptr ? &grid_dim : nullptr,
        warp_size_present != nullptr ? &warp_size : nullptr);
   }
-  if (rpc_write_start_response(conn, request_id) < 0 ||
-      rpc_write_end(conn) < 0) {
-    return -1;
-  }
   return 0;
 }
 
@@ -1046,10 +1042,6 @@ int handle___cudaRegisterVar(conn_t *conn) {
     fn(handle, hostVar, stored.first.data(), stored.second.c_str(), ext, size,
        constant, global);
   }
-  if (rpc_write_start_response(conn, request_id) < 0 ||
-      rpc_write_end(conn) < 0) {
-    return -1;
-  }
   return 0;
 }
 
@@ -1075,10 +1067,6 @@ int handle___cudaUnregisterFatBinary(conn_t *conn) {
       delete entry->second;
       registrations().erase(entry);
     }
-  }
-  if (rpc_write_start_response(conn, request_id) < 0 ||
-      rpc_write_end(conn) < 0) {
-    return -1;
   }
   return 0;
 }
