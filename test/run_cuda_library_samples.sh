@@ -723,9 +723,9 @@ for i in "${!UNITS[@]}"; do
   [[ "$unit" == cuSOLVERSp2cuDSS/* ]] && cudss_lib="$CUDSS_TRANSITION_HOME/lib"
 
   timeout_seconds="$SAMPLE_TIMEOUT"
-  if [[ "$unit" == MathDx/cuSolverDx/blocked_potrf ]]; then
-    # #899: the 400-matrix benchmark repeatedly transfers 800 MiB buffers and
-    # can exceed the ordinary timeout on the L4 integration lane.
+  if [[ "$unit" == MathDx/cuSolverDx/blocked_potrf || "$unit" == cuSOLVER/MgSyevd/* ]]; then
+    # #899/#836: these unmodified upstream samples issue thousands of blocking
+    # driver calls and need room for a busy GPU integration lane.
     timeout_seconds="$LONG_SAMPLE_TIMEOUT"
   fi
 
@@ -734,11 +734,12 @@ for i in "${!UNITS[@]}"; do
   set +e
   (
     cd "$cwd"
+    # Keep progress in the log even if a sample hangs before its stdio flush.
     timeout --kill-after=5s "$timeout_seconds" env \
       LD_LIBRARY_PATH="$LUPINE_LIB_DIR:$CUDA_LIB_DIR:${CUSPARSELT_HOME:+$CUSPARSELT_HOME/lib:}$CUTENSOR_HOME/lib:$CUEST_HOME/lib:$NVJPEG2K_HOME/lib:$cudss_lib:$NVCOMP_HOME/lib:$NVTIFF_HOME/lib:$NPPPLUS_HOME/lib:${LD_LIBRARY_PATH:-}" \
       LUPINE_SERVER="$SERVER_HOST:$port" \
       LD_PRELOAD="$LUPINE_LIB" \
-      "$exe" "${argv[@]}"
+      stdbuf -oL -eL "$exe" "${argv[@]}"
   ) >"$log" 2>&1
   rc=$?
   set -e
