@@ -5095,7 +5095,6 @@ extern "C" CUresult cuEventRecord(CUevent hEvent, CUstream hStream) {
   if (lupine_route_is_local(route)) {
     return lupine_call_real_cuda_fn("cuEventRecord", hEvent, hStream);
   }
-  lupine_event_invalidate_completion(hEvent);
   conn_t *conn = lupine_route_remote_conn(route);
   uint64_t async_sequence = 0;
   if (lupine_prepare_rpc(conn) < 0 ||
@@ -5107,6 +5106,8 @@ extern "C" CUresult cuEventRecord(CUevent hEvent, CUstream hStream) {
       rpc_write_end(conn) < 0) {
     return CUDA_ERROR_DEVICE_UNAVAILABLE;
   }
+  // Invalidate after enqueue so an overlapping query cannot retain old state.
+  lupine_event_invalidate_completion(hEvent);
   return CUDA_SUCCESS;
 }
 
@@ -5125,7 +5126,6 @@ extern "C" CUresult cuEventRecordWithFlags(CUevent hEvent, CUstream hStream,
     return lupine_call_real_cuda_fn("cuEventRecordWithFlags", hEvent, hStream,
                                     flags);
   }
-  lupine_event_invalidate_completion(hEvent);
   conn_t *conn = lupine_route_remote_conn(route);
   uint64_t async_sequence = 0;
   if (lupine_prepare_rpc(conn) < 0 ||
@@ -5137,6 +5137,7 @@ extern "C" CUresult cuEventRecordWithFlags(CUevent hEvent, CUstream hStream,
       rpc_write(conn, &flags, sizeof(flags)) < 0 || rpc_write_end(conn) < 0) {
     return CUDA_ERROR_DEVICE_UNAVAILABLE;
   }
+  lupine_event_invalidate_completion(hEvent);
   return CUDA_SUCCESS;
 }
 
