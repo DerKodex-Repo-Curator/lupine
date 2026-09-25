@@ -930,17 +930,27 @@ def parse_annotation(
                         anchor=anchor,
                     )
                     break
+    if metadata.routing_kind is None:
+        metadata.routing_kind, metadata.routing_parameter = infer_routing_key(params)
     # Promote any param with @deeparray entries to a DeepStructOperation,
     # inheriting the send/recv direction from its @param line.
     for pname, members in deep_arrays.items():
         for i, op in enumerate(operations):
             if op.parameter.name == pname:
+                node_owner = None
+                if getattr(op, "recv", False) and not getattr(op, "send", True):
+                    if metadata.routing_kind != "GRAPH_NODE":
+                        raise NotImplementedError(
+                            "RECV_ONLY @deeparray requires a graph-node owner"
+                        )
+                    node_owner = metadata.routing_parameter.name
                 operations[i] = DeepStructOperation(
                     send=getattr(op, "send", True),
                     recv=getattr(op, "recv", False),
                     parameter=op.parameter,
                     ptr=op.parameter.type,
                     members=members,
+                    node_owner=node_owner,
                 )
                 break
     # An array is sized from another parameter, so that parameter has to be on
@@ -974,8 +984,6 @@ def parse_annotation(
                 "@retain currently requires a RECV_ONLY NULL_TERMINATED parameter"
             )
 
-    if metadata.routing_kind is None:
-        metadata.routing_kind, metadata.routing_parameter = infer_routing_key(params)
     return metadata
 
 
@@ -1261,9 +1269,9 @@ def write_cuda_client(functions_with_annotations, legacy_abi_functions):
             "extern int rpc_size();\n"
             "extern conn_t *rpc_client_get_connection(unsigned int index);\n"
             "extern void rpc_close(conn_t *conn);\n"
-            'extern "C" void lupine_deep_cache_reset(const void *key);\n'
-            'extern "C" void *lupine_deep_cache_add(const void *key, '
-            "size_t bytes);\n\n"
+            'extern "C" void *lupine_deep_node_cache_get(CUgraphNode node, size_t slot, size_t bytes);\n'
+            'extern "C" void lupine_deep_node_cache_reset(CUgraphNode node);\n'
+            'std::vector<CUgraphNode> lupine_deep_cache_graph_nodes(CUgraph graph);\n\n'
             'extern "C" conn_t *lupine_rpc_conn_for_device(CUdevice *device);\n'
             'extern "C" conn_t *lupine_rpc_conn_for_current_context();\n'
             'extern "C" conn_t *lupine_rpc_conn_for_context(CUcontext ctx);\n'

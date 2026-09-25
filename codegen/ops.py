@@ -615,8 +615,10 @@ class DeepStructOperation:
 
     SEND is an input deep-copy (cuGraphAdd* / *SetParams). RECV fills the
     caller's struct from node-owned memory (*GetParams); the array storage lives
-    in a per-output-pointer client cache (lupine_deep_cache_*) so the returned
-    pointers stay valid until the next deep query into the same struct.
+    in a per-node client cache until the node's parameters change or the node
+    is destroyed. Routing metadata identifies the owner; no extra annotation
+    is needed. SEND_RECV returns struct fields while preserving caller-owned
+    input arrays; these are not written back.
     """
 
     send: bool
@@ -624,6 +626,7 @@ class DeepStructOperation:
     parameter: Parameter
     ptr: Pointer
     members: list  # list of (array_member, count_member)
+    node_owner: Optional[str] = None
 
     def struct_type(self) -> str:
         c = self.ptr.ptr_to.const
@@ -633,12 +636,20 @@ class DeepStructOperation:
         return result
 
     def client_declaration(self) -> str:
-        # Reject a null struct pointer before the request is framed so we return
-        # cleanly instead of desyncing the RPC stream.
-        return (
-            f"    if ({self.parameter.name} == nullptr) "
-            "return CUDA_ERROR_INVALID_VALUE;\n"
-        )
+        name = self.parameter.name
+        code = f"    if ({name} == nullptr) return CUDA_ERROR_INVALID_VALUE;\n"
+        if self.send:
+            for member, count in self.members:
+                code += (
+                    f"    if ({name}->{count} > SIZE_MAX / sizeof(*{name}->{member}) ||\n"
+                    f"        ({name}->{count} != 0 && {name}->{member} == nullptr))\n"
+                    "        return CUDA_ERROR_INVALID_VALUE;\n"
+                )
+                if self.recv:
+                    code += (
+                        f"    auto {name}_{member}_input = {name}->{member};\n"
+                    )
+        return code
 
     @property
     def server_declaration(self) -> str:
@@ -680,6 +691,8 @@ class DeepStructOperation:
             return
         name = self.parameter.name
         f.write(f"        rpc_write(conn, &{name}, sizeof({name})) < 0 ||\n")
+        if self.send:
+            return
         for member, count in self.members:
             f.write(
                 f"        rpc_write(conn, {name}.{member}, "
@@ -701,17 +714,23 @@ class DeepStructOperation:
         if not self.recv:
             return
         name = self.parameter.name
-        f.write(
-            f"        (lupine_deep_cache_reset((const void *){name}), false) ||\n"
-        )
         f.write(f"        rpc_read(conn, {name}, sizeof(*{name})) < 0 ||\n")
-        for member, count in self.members:
+        for index, (member, count) in enumerate(self.members):
             esz = f"{name}->{count} * sizeof(*{name}->{member})"
+            if self.send:
+                # SEND_RECV arrays belong to the caller; the returned header
+                # contains server scratch pointers that must never escape.
+                f.write(
+                    f"        (({name}->{member} = {name}_{member}_input), false) ||\n"
+                )
+                continue
+            storage = (
+                f"(decltype({name}->{member}))lupine_deep_node_cache_get("
+                f"{self.node_owner}, {index}, {esz})"
+            )
             f.write(
                 f"        (({name}->{member} = ({name}->{count} != 0 ? "
-                f"(decltype({name}->{member}))"
-                f"lupine_deep_cache_add((const void *){name}, {esz}) : nullptr)),"
-                " false) ||\n"
+                f"{storage} : nullptr)), false) ||\n"
             )
             f.write(
                 f"        ({name}->{count} != 0 && {name}->{member} == nullptr) ||\n"
