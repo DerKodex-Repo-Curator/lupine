@@ -4015,6 +4015,37 @@ static CUresult lupine_bulk_push(conn_t *conn, lupine_bulk_lanes *lanes,
   return return_value;
 }
 
+// A synchronous host-to-device copy this client can answer without the
+// server's reply.
+//
+// What `cuMemcpyHtoD_v2` returning tells a correct caller is that the source
+// buffer is free to reuse and that later CUDA work sees the bytes. It does not
+// promise the transfer has landed: measured natively on driver 590.48, a 1 MiB
+// pageable copy reports 24.8 GB/s and leaves 0.34 ms of transfer outstanding,
+// because the driver stages it. It stages into a bounded ring and blocks when
+// that overflows -- at 256 MiB and above the rate falls to the link's 2.7 GB/s
+// -- and it never stages a page-locked source, which is why a pinned copy is
+// fully blocking. Both rules are kept here: `lupine_htod_pushed_bytes` answers
+// zero for any source overlapping a tracked host allocation, so only a pageable
+// source is ever sent this way, and `rpc_write_end` has compressed or copied
+// every byte into the stream's encoder before it returns, into a transport that
+// blocks the caller once its outbound backlog passes 8 MiB rather than growing.
+// A later request from any thread waits for this one's submission at the
+// server (#919), as a later synchronous call does natively.
+//
+// The destination has to be one allocation this client tracks, on this route,
+// with room for the copy, and never a host allocation's device alias, which the
+// application could read back with no CUDA call at all. Everything else keeps
+// the reply, so an argument error is still returned by the call that made it.
+static bool lupine_htod_fire_and_forget(lupine_route route,
+                                        CUdeviceptr destination, size_t bytes,
+                                        uint64_t pushed_bytes) {
+  return pushed_bytes == bytes && bytes != 0 &&
+         lupine_deviceptr_allocation_covers(destination, bytes,
+                                            lupine_route_identity(route)) &&
+         !lupine_host_ptr_is_tracked(destination);
+}
+
 extern "C" CUresult cuMemcpyHtoD_v2(CUdeviceptr dstDevice, const void *srcHost,
                                     size_t ByteCount) {
   lupine_route route = lupine_route_for_deviceptr(dstDevice);
@@ -4045,6 +4076,31 @@ extern "C" CUresult cuMemcpyHtoD_v2(CUdeviceptr dstDevice, const void *srcHost,
           dstDevice, reinterpret_cast<CUdeviceptr>(srcHost))) {
     lanes = lupine_client_transport_bulk_lanes(conn);
   }
+  // A striped copy still waits: its chunks travel on the bulk connections.
+  if (lanes == nullptr &&
+      lupine_htod_fire_and_forget(route, dstDevice, ByteCount, pushed_bytes)) {
+    // The ticket keeps this copy in submission order against work issued on
+    // other lanes, which is the ordering the reply used to provide.
+    uint8_t fire_and_forget = 1;
+    uint64_t async_sequence = 0;
+    if (lupine_prepare_rpc(conn) < 0 ||
+        rpc_write_start_async_request(conn, RPC_cuMemcpyHtoD_v2,
+                                      &async_sequence) < 0 ||
+        rpc_write(conn, &fire_and_forget, sizeof(fire_and_forget)) < 0 ||
+        rpc_write(conn, &async_sequence, sizeof(async_sequence)) < 0 ||
+        rpc_write(conn, &is_server_authoritative,
+                  sizeof(is_server_authoritative)) < 0 ||
+        rpc_write(conn, &dstDevice, sizeof(dstDevice)) < 0 ||
+        rpc_write(conn, &ByteCount, sizeof(ByteCount)) < 0 ||
+        rpc_write(conn, &wire_source, sizeof(wire_source)) < 0 ||
+        rpc_write(conn, &pushed_bytes, sizeof(pushed_bytes)) < 0 ||
+        rpc_write(conn, srcHost, pushed_bytes) < 0 || rpc_write_end(conn) < 0) {
+      return CUDA_ERROR_DEVICE_UNAVAILABLE;
+    }
+    return lupine_sync_mapped_device_to_host();
+  }
+  uint8_t fire_and_forget = 0;
+  uint64_t async_sequence = 0;
   if (lanes != nullptr) {
     return_value = lupine_prepare_rpc(conn) < 0
                        ? CUDA_ERROR_DEVICE_UNAVAILABLE
@@ -4052,6 +4108,8 @@ extern "C" CUresult cuMemcpyHtoD_v2(CUdeviceptr dstDevice, const void *srcHost,
                                           ByteCount, false);
   } else if (lupine_prepare_rpc(conn) < 0 ||
              rpc_write_start_request(conn, RPC_cuMemcpyHtoD_v2) < 0 ||
+             rpc_write(conn, &fire_and_forget, sizeof(fire_and_forget)) < 0 ||
+             rpc_write(conn, &async_sequence, sizeof(async_sequence)) < 0 ||
              rpc_write(conn, &is_server_authoritative,
                        sizeof(is_server_authoritative)) < 0 ||
              rpc_write(conn, &dstDevice, sizeof(dstDevice)) < 0 ||
