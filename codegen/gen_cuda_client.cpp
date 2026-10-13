@@ -16,7 +16,6 @@
 
 #include "client_routing.h"
 #include "cuda_client_memcpy.h"
-#include "gen_cuda_streams.h"
 #include "rpc.h"
 
 extern int rpc_size();
@@ -1340,8 +1339,7 @@ CUresult cuMemcpyPeer(CUdeviceptr dstDevice, CUcontext dstContext,
                                     srcContext, ByteCount);
   conn_t *conn = lupine_route_remote_conn(route);
   if (lupine_prepare_rpc(conn) < 0 ||
-      rpc_write_start_request(
-          conn, lupine_implicit_stream_rpc(RPC_cuMemcpyPeer)) < 0 ||
+      rpc_write_start_request(conn, RPC_cuMemcpyPeer) < 0 ||
       rpc_write(conn, &dstDevice, sizeof(CUdeviceptr)) < 0 ||
       rpc_write(conn, &dstContext, sizeof(CUcontext)) < 0 ||
       rpc_write(conn, &srcDevice, sizeof(CUdeviceptr)) < 0 ||
@@ -1372,8 +1370,7 @@ CUresult cuMemcpyDtoD_v2(CUdeviceptr dstDevice, CUdeviceptr srcDevice,
   }
   conn_t *conn = lupine_route_remote_conn(route);
   if (lupine_prepare_rpc(conn) < 0 ||
-      rpc_write_start_request(
-          conn, lupine_implicit_stream_rpc(RPC_cuMemcpyDtoD_v2)) < 0 ||
+      rpc_write_start_request(conn, RPC_cuMemcpyDtoD_v2) < 0 ||
       rpc_write(conn, &dstDevice, sizeof(CUdeviceptr)) < 0 ||
       rpc_write(conn, &srcDevice, sizeof(CUdeviceptr)) < 0 ||
       rpc_write(conn, &ByteCount, sizeof(size_t)) < 0 ||
@@ -1395,8 +1392,7 @@ CUresult cuMemcpyDtoA_v2(CUarray dstArray, size_t dstOffset,
                                     dstArray, dstOffset, srcDevice, ByteCount);
   conn_t *conn = lupine_route_remote_conn(route);
   if (lupine_prepare_rpc(conn) < 0 ||
-      rpc_write_start_request(
-          conn, lupine_implicit_stream_rpc(RPC_cuMemcpyDtoA_v2)) < 0 ||
+      rpc_write_start_request(conn, RPC_cuMemcpyDtoA_v2) < 0 ||
       rpc_write(conn, &dstArray, sizeof(CUarray)) < 0 ||
       rpc_write(conn, &dstOffset, sizeof(size_t)) < 0 ||
       rpc_write(conn, &srcDevice, sizeof(CUdeviceptr)) < 0 ||
@@ -1417,8 +1413,7 @@ CUresult cuMemcpyAtoD_v2(CUdeviceptr dstDevice, CUarray srcArray,
                                     dstDevice, srcArray, srcOffset, ByteCount);
   conn_t *conn = lupine_route_remote_conn(route);
   if (lupine_prepare_rpc(conn) < 0 ||
-      rpc_write_start_request(
-          conn, lupine_implicit_stream_rpc(RPC_cuMemcpyAtoD_v2)) < 0 ||
+      rpc_write_start_request(conn, RPC_cuMemcpyAtoD_v2) < 0 ||
       rpc_write(conn, &dstDevice, sizeof(CUdeviceptr)) < 0 ||
       rpc_write(conn, &srcArray, sizeof(CUarray)) < 0 ||
       rpc_write(conn, &srcOffset, sizeof(size_t)) < 0 ||
@@ -1440,8 +1435,7 @@ CUresult cuMemcpyAtoA_v2(CUarray dstArray, size_t dstOffset, CUarray srcArray,
                                     ByteCount);
   conn_t *conn = lupine_route_remote_conn(route);
   if (lupine_prepare_rpc(conn) < 0 ||
-      rpc_write_start_request(
-          conn, lupine_implicit_stream_rpc(RPC_cuMemcpyAtoA_v2)) < 0 ||
+      rpc_write_start_request(conn, RPC_cuMemcpyAtoA_v2) < 0 ||
       rpc_write(conn, &dstArray, sizeof(CUarray)) < 0 ||
       rpc_write(conn, &dstOffset, sizeof(size_t)) < 0 ||
       rpc_write(conn, &srcArray, sizeof(CUarray)) < 0 ||
@@ -1523,8 +1517,7 @@ CUresult cuMemsetD8_v2(CUdeviceptr dstDevice, unsigned char uc, size_t N) {
   }
   conn_t *conn = lupine_route_remote_conn(route);
   if (lupine_prepare_rpc(conn) < 0 ||
-      rpc_write_start_request(
-          conn, lupine_implicit_stream_rpc(RPC_cuMemsetD8_v2)) < 0 ||
+      rpc_write_start_request(conn, RPC_cuMemsetD8_v2) < 0 ||
       rpc_write(conn, &dstDevice, sizeof(CUdeviceptr)) < 0 ||
       rpc_write(conn, &uc, sizeof(unsigned char)) < 0 ||
       rpc_write(conn, &N, sizeof(size_t)) < 0 ||
@@ -1549,8 +1542,7 @@ CUresult cuMemsetD16_v2(CUdeviceptr dstDevice, unsigned short us, size_t N) {
   }
   conn_t *conn = lupine_route_remote_conn(route);
   if (lupine_prepare_rpc(conn) < 0 ||
-      rpc_write_start_request(
-          conn, lupine_implicit_stream_rpc(RPC_cuMemsetD16_v2)) < 0 ||
+      rpc_write_start_request(conn, RPC_cuMemsetD16_v2) < 0 ||
       rpc_write(conn, &dstDevice, sizeof(CUdeviceptr)) < 0 ||
       rpc_write(conn, &us, sizeof(unsigned short)) < 0 ||
       rpc_write(conn, &N, sizeof(size_t)) < 0 ||
@@ -1575,8 +1567,7 @@ CUresult cuMemsetD32_v2(CUdeviceptr dstDevice, unsigned int ui, size_t N) {
   }
   conn_t *conn = lupine_route_remote_conn(route);
   if (lupine_prepare_rpc(conn) < 0 ||
-      rpc_write_start_request(
-          conn, lupine_implicit_stream_rpc(RPC_cuMemsetD32_v2)) < 0 ||
+      rpc_write_start_request(conn, RPC_cuMemsetD32_v2) < 0 ||
       rpc_write(conn, &dstDevice, sizeof(CUdeviceptr)) < 0 ||
       rpc_write(conn, &ui, sizeof(unsigned int)) < 0 ||
       rpc_write(conn, &N, sizeof(size_t)) < 0 ||
@@ -1603,8 +1594,7 @@ CUresult cuMemsetD2D8_v2(CUdeviceptr dstDevice, size_t dstPitch,
   }
   conn_t *conn = lupine_route_remote_conn(route);
   if (lupine_prepare_rpc(conn) < 0 ||
-      rpc_write_start_request(
-          conn, lupine_implicit_stream_rpc(RPC_cuMemsetD2D8_v2)) < 0 ||
+      rpc_write_start_request(conn, RPC_cuMemsetD2D8_v2) < 0 ||
       rpc_write(conn, &dstDevice, sizeof(CUdeviceptr)) < 0 ||
       rpc_write(conn, &dstPitch, sizeof(size_t)) < 0 ||
       rpc_write(conn, &uc, sizeof(unsigned char)) < 0 ||
@@ -1633,8 +1623,7 @@ CUresult cuMemsetD2D16_v2(CUdeviceptr dstDevice, size_t dstPitch,
   }
   conn_t *conn = lupine_route_remote_conn(route);
   if (lupine_prepare_rpc(conn) < 0 ||
-      rpc_write_start_request(
-          conn, lupine_implicit_stream_rpc(RPC_cuMemsetD2D16_v2)) < 0 ||
+      rpc_write_start_request(conn, RPC_cuMemsetD2D16_v2) < 0 ||
       rpc_write(conn, &dstDevice, sizeof(CUdeviceptr)) < 0 ||
       rpc_write(conn, &dstPitch, sizeof(size_t)) < 0 ||
       rpc_write(conn, &us, sizeof(unsigned short)) < 0 ||
@@ -1663,8 +1652,7 @@ CUresult cuMemsetD2D32_v2(CUdeviceptr dstDevice, size_t dstPitch,
   }
   conn_t *conn = lupine_route_remote_conn(route);
   if (lupine_prepare_rpc(conn) < 0 ||
-      rpc_write_start_request(
-          conn, lupine_implicit_stream_rpc(RPC_cuMemsetD2D32_v2)) < 0 ||
+      rpc_write_start_request(conn, RPC_cuMemsetD2D32_v2) < 0 ||
       rpc_write(conn, &dstDevice, sizeof(CUdeviceptr)) < 0 ||
       rpc_write(conn, &dstPitch, sizeof(size_t)) < 0 ||
       rpc_write(conn, &ui, sizeof(unsigned int)) < 0 ||
@@ -7430,6 +7418,22 @@ extern "C" CUresult cuMemsetD8(CUdeviceptr dstDevice, unsigned char uc,
   return cuMemsetD8_v2(dstDevice, uc, N);
 }
 
+#ifdef cuMemsetD16
+#undef cuMemsetD16
+#endif
+extern "C" CUresult cuMemsetD16(CUdeviceptr dstDevice, unsigned short us,
+                                size_t N) {
+  return cuMemsetD16_v2(dstDevice, us, N);
+}
+
+#ifdef cuMemsetD32
+#undef cuMemsetD32
+#endif
+extern "C" CUresult cuMemsetD32(CUdeviceptr dstDevice, unsigned int ui,
+                                size_t N) {
+  return cuMemsetD32_v2(dstDevice, ui, N);
+}
+
 #ifdef cuMemsetD2D8
 #undef cuMemsetD2D8
 #endif
@@ -7466,860 +7470,594 @@ extern "C" CUresult cuIpcOpenMemHandle(CUdeviceptr *pdptr,
   return cuIpcOpenMemHandle_v2(pdptr, handle, Flags);
 }
 
-#ifdef cuMemPrefetchAsync
-#undef cuMemPrefetchAsync
+extern "C" CUresult cuMemcpy_ptds(CUdeviceptr dst, CUdeviceptr src,
+                                  size_t ByteCount) {
+  CUresult result = cuMemcpyAsync(dst, src, ByteCount, CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpy2DUnaligned_v2_ptds(const CUDA_MEMCPY2D *pCopy) {
+  return cuMemcpy2DUnaligned_v2(pCopy);
+}
+extern "C" CUresult cuMemcpy2D_v2_ptds(const CUDA_MEMCPY2D *pCopy) {
+  CUresult result = cuMemcpy2DAsync_v2(pCopy, CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpy3DPeer_ptds(const CUDA_MEMCPY3D_PEER *pCopy) {
+  CUresult result = cuMemcpy3DPeerAsync(pCopy, CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpy3D_v2_ptds(const CUDA_MEMCPY3D *pCopy) {
+  CUresult result = cuMemcpy3DAsync_v2(pCopy, CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpyAtoA_v2_ptds(CUarray dstArray, size_t dstOffset,
+                                         CUarray srcArray, size_t srcOffset,
+                                         size_t ByteCount) {
+  return cuMemcpyAtoA_v2(dstArray, dstOffset, srcArray, srcOffset, ByteCount);
+}
+extern "C" CUresult cuMemcpyAtoD_v2_ptds(CUdeviceptr dstDevice,
+                                         CUarray srcArray, size_t srcOffset,
+                                         size_t ByteCount) {
+  return cuMemcpyAtoD_v2(dstDevice, srcArray, srcOffset, ByteCount);
+}
+extern "C" CUresult cuMemcpyAtoH_v2_ptds(void *dstHost, CUarray srcArray,
+                                         size_t srcOffset, size_t ByteCount) {
+  CUresult result = cuMemcpyAtoHAsync_v2(dstHost, srcArray, srcOffset,
+                                         ByteCount, CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpyDtoA_v2_ptds(CUarray dstArray, size_t dstOffset,
+                                         CUdeviceptr srcDevice,
+                                         size_t ByteCount) {
+  return cuMemcpyDtoA_v2(dstArray, dstOffset, srcDevice, ByteCount);
+}
+extern "C" CUresult cuMemcpyDtoD_v2_ptds(CUdeviceptr dstDevice,
+                                         CUdeviceptr srcDevice,
+                                         size_t ByteCount) {
+  CUresult result = cuMemcpyDtoDAsync_v2(dstDevice, srcDevice, ByteCount,
+                                         CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpyDtoH_v2_ptds(void *dstHost, CUdeviceptr srcDevice,
+                                         size_t ByteCount) {
+  CUresult result =
+      cuMemcpyDtoHAsync_v2(dstHost, srcDevice, ByteCount, CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpyHtoD_v2_ptds(CUdeviceptr dstDevice,
+                                         const void *srcHost,
+                                         size_t ByteCount) {
+  CUresult result =
+      cuMemcpyHtoDAsync_v2(dstDevice, srcHost, ByteCount, CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpyPeer_ptds(CUdeviceptr dstDevice,
+                                      CUcontext dstContext,
+                                      CUdeviceptr srcDevice,
+                                      CUcontext srcContext, size_t ByteCount) {
+  CUresult result =
+      cuMemcpyPeerAsync(dstDevice, dstContext, srcDevice, srcContext, ByteCount,
+                        CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemsetD16_v2_ptds(CUdeviceptr dstDevice,
+                                        unsigned short us, size_t N) {
+  CUresult result = cuMemsetD16Async(dstDevice, us, N, CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemsetD2D16_v2_ptds(CUdeviceptr dstDevice,
+                                          size_t dstPitch, unsigned short us,
+                                          size_t Width, size_t Height) {
+  CUresult result = cuMemsetD2D16Async(dstDevice, dstPitch, us, Width, Height,
+                                       CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemsetD2D32_v2_ptds(CUdeviceptr dstDevice,
+                                          size_t dstPitch, unsigned int ui,
+                                          size_t Width, size_t Height) {
+  CUresult result = cuMemsetD2D32Async(dstDevice, dstPitch, ui, Width, Height,
+                                       CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemsetD2D8_v2_ptds(CUdeviceptr dstDevice, size_t dstPitch,
+                                         unsigned char uc, size_t Width,
+                                         size_t Height) {
+  CUresult result = cuMemsetD2D8Async(dstDevice, dstPitch, uc, Width, Height,
+                                      CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemsetD32_v2_ptds(CUdeviceptr dstDevice, unsigned int ui,
+                                        size_t N) {
+  CUresult result = cuMemsetD32Async(dstDevice, ui, N, CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemsetD8_v2_ptds(CUdeviceptr dstDevice, unsigned char uc,
+                                       size_t N) {
+  CUresult result = cuMemsetD8Async(dstDevice, uc, N, CU_STREAM_PER_THREAD);
+  return result != CUDA_SUCCESS ? result
+                                : cuStreamSynchronize(CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuEventRecord_ptsz(CUevent hEvent, CUstream hStream) {
+  return cuEventRecord(hEvent, hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuEventRecordWithFlags_ptsz(CUevent hEvent,
+                                                CUstream hStream,
+                                                unsigned int flags) {
+  return cuEventRecordWithFlags(
+      hEvent, hStream ? hStream : CU_STREAM_PER_THREAD, flags);
+}
+extern "C" CUresult cuGraphInstantiateWithParams_ptsz(
+    CUgraphExec *phGraphExec, CUgraph hGraph,
+    CUDA_GRAPH_INSTANTIATE_PARAMS *instantiateParams) {
+  return cuGraphInstantiateWithParams(phGraphExec, hGraph, instantiateParams);
+}
+extern "C" CUresult cuGraphLaunch_ptsz(CUgraphExec hGraphExec,
+                                       CUstream hStream) {
+  return cuGraphLaunch(hGraphExec, hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuGraphUpload_ptsz(CUgraphExec hGraphExec,
+                                       CUstream hStream) {
+  return cuGraphUpload(hGraphExec, hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuGraphicsMapResources_ptsz(unsigned int count,
+                                                CUgraphicsResource *resources,
+                                                CUstream hStream) {
+  return cuGraphicsMapResources(count, resources,
+                                hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuGraphicsUnmapResources_ptsz(unsigned int count,
+                                                  CUgraphicsResource *resources,
+                                                  CUstream hStream) {
+  return cuGraphicsUnmapResources(count, resources,
+                                  hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuLaunchCooperativeKernel_ptsz(
+    CUfunction f, unsigned int gridDimX, unsigned int gridDimY,
+    unsigned int gridDimZ, unsigned int blockDimX, unsigned int blockDimY,
+    unsigned int blockDimZ, unsigned int sharedMemBytes, CUstream hStream,
+    void **kernelParams) {
+  return cuLaunchCooperativeKernel(
+      f, gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ,
+      sharedMemBytes, hStream ? hStream : CU_STREAM_PER_THREAD, kernelParams);
+}
+extern "C" CUresult cuLaunchHostFunc_ptsz(CUstream hStream, CUhostFn fn,
+                                          void *userData) {
+  return cuLaunchHostFunc(hStream ? hStream : CU_STREAM_PER_THREAD, fn,
+                          userData);
+}
+extern "C" CUresult
+cuLaunchKernel_ptsz(CUfunction f, unsigned int gridDimX, unsigned int gridDimY,
+                    unsigned int gridDimZ, unsigned int blockDimX,
+                    unsigned int blockDimY, unsigned int blockDimZ,
+                    unsigned int sharedMemBytes, CUstream hStream,
+                    void **kernelParams, void **extra) {
+  return cuLaunchKernel(f, gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY,
+                        blockDimZ, sharedMemBytes,
+                        hStream ? hStream : CU_STREAM_PER_THREAD, kernelParams,
+                        extra);
+}
+extern "C" CUresult cuLaunchKernelEx_ptsz(const CUlaunchConfig *config,
+                                          CUfunction f, void **kernelParams,
+                                          void **extra) {
+  CUlaunchConfig per_thread = *config;
+  per_thread.hStream =
+      per_thread.hStream ? per_thread.hStream : CU_STREAM_PER_THREAD;
+  return cuLaunchKernelEx(&per_thread, f, kernelParams, extra);
+}
+extern "C" CUresult cuMemAllocAsync_ptsz(CUdeviceptr *dptr, size_t bytesize,
+                                         CUstream hStream) {
+  return cuMemAllocAsync(dptr, bytesize,
+                         hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemAllocFromPoolAsync_ptsz(CUdeviceptr *dptr,
+                                                 size_t bytesize,
+                                                 CUmemoryPool pool,
+                                                 CUstream hStream) {
+  return cuMemAllocFromPoolAsync(dptr, bytesize, pool,
+                                 hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemFreeAsync_ptsz(CUdeviceptr dptr, CUstream hStream) {
+  return cuMemFreeAsync(dptr, hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemMapArrayAsync_ptsz(CUarrayMapInfo *mapInfoList,
+                                            unsigned int count,
+                                            CUstream hStream) {
+  return cuMemMapArrayAsync(mapInfoList, count,
+                            hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+#if CUDA_VERSION >= 12020
+extern "C" CUresult cuMemPrefetchAsync_v2_ptsz(CUdeviceptr devPtr, size_t count,
+                                               CUmemLocation location,
+                                               unsigned int flags,
+                                               CUstream hStream) {
+  return cuMemPrefetchAsync_v2(devPtr, count, location, flags,
+                               hStream ? hStream : CU_STREAM_PER_THREAD);
+}
 #endif
-extern "C" CUresult cuMemPrefetchAsync(CUdeviceptr devPtr, size_t count,
-                                       CUdevice dstDevice, CUstream hStream);
-#ifdef cuStreamBeginCapture
-#undef cuStreamBeginCapture
-#endif
-extern "C" CUresult cuStreamBeginCapture(CUstream hStream);
-#ifdef cuStreamBeginCaptureToGraph
-#undef cuStreamBeginCaptureToGraph
-#endif
+extern "C" CUresult cuMemcpy2DAsync_v2_ptsz(const CUDA_MEMCPY2D *pCopy,
+                                            CUstream hStream) {
+  return cuMemcpy2DAsync_v2(pCopy, hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpy3DAsync_v2_ptsz(const CUDA_MEMCPY3D *pCopy,
+                                            CUstream hStream) {
+  return cuMemcpy3DAsync_v2(pCopy, hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpy3DPeerAsync_ptsz(const CUDA_MEMCPY3D_PEER *pCopy,
+                                             CUstream hStream) {
+  return cuMemcpy3DPeerAsync(pCopy, hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpyAsync(CUdeviceptr dst, CUdeviceptr src,
+                                  size_t ByteCount, CUstream hStream);
+extern "C" CUresult cuMemcpyAsync_ptsz(CUdeviceptr dst, CUdeviceptr src,
+                                       size_t ByteCount, CUstream hStream) {
+  return cuMemcpyAsync(dst, src, ByteCount,
+                       hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpyAtoHAsync_v2_ptsz(void *dstHost, CUarray srcArray,
+                                              size_t srcOffset,
+                                              size_t ByteCount,
+                                              CUstream hStream) {
+  return cuMemcpyAtoHAsync_v2(dstHost, srcArray, srcOffset, ByteCount,
+                              hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpyDtoDAsync_v2_ptsz(CUdeviceptr dstDevice,
+                                              CUdeviceptr srcDevice,
+                                              size_t ByteCount,
+                                              CUstream hStream) {
+  return cuMemcpyDtoDAsync_v2(dstDevice, srcDevice, ByteCount,
+                              hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpyDtoHAsync_v2_ptsz(void *dstHost,
+                                              CUdeviceptr srcDevice,
+                                              size_t ByteCount,
+                                              CUstream hStream) {
+  return cuMemcpyDtoHAsync_v2(dstHost, srcDevice, ByteCount,
+                              hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpyHtoDAsync_v2_ptsz(CUdeviceptr dstDevice,
+                                              const void *srcHost,
+                                              size_t ByteCount,
+                                              CUstream hStream) {
+  return cuMemcpyHtoDAsync_v2(dstDevice, srcHost, ByteCount,
+                              hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemcpyPeerAsync_ptsz(CUdeviceptr dstDevice,
+                                           CUcontext dstContext,
+                                           CUdeviceptr srcDevice,
+                                           CUcontext srcContext,
+                                           size_t ByteCount, CUstream hStream) {
+  return cuMemcpyPeerAsync(dstDevice, dstContext, srcDevice, srcContext,
+                           ByteCount, hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemsetD16Async_ptsz(CUdeviceptr dstDevice,
+                                          unsigned short us, size_t N,
+                                          CUstream hStream) {
+  return cuMemsetD16Async(dstDevice, us, N,
+                          hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemsetD2D16Async_ptsz(CUdeviceptr dstDevice,
+                                            size_t dstPitch, unsigned short us,
+                                            size_t Width, size_t Height,
+                                            CUstream hStream) {
+  return cuMemsetD2D16Async(dstDevice, dstPitch, us, Width, Height,
+                            hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemsetD2D32Async_ptsz(CUdeviceptr dstDevice,
+                                            size_t dstPitch, unsigned int ui,
+                                            size_t Width, size_t Height,
+                                            CUstream hStream) {
+  return cuMemsetD2D32Async(dstDevice, dstPitch, ui, Width, Height,
+                            hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemsetD2D8Async_ptsz(CUdeviceptr dstDevice,
+                                           size_t dstPitch, unsigned char uc,
+                                           size_t Width, size_t Height,
+                                           CUstream hStream) {
+  return cuMemsetD2D8Async(dstDevice, dstPitch, uc, Width, Height,
+                           hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemsetD32Async_ptsz(CUdeviceptr dstDevice,
+                                          unsigned int ui, size_t N,
+                                          CUstream hStream) {
+  return cuMemsetD32Async(dstDevice, ui, N,
+                          hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuMemsetD8Async_ptsz(CUdeviceptr dstDevice,
+                                         unsigned char uc, size_t N,
+                                         CUstream hStream) {
+  return cuMemsetD8Async(dstDevice, uc, N,
+                         hStream ? hStream : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuSignalExternalSemaphoresAsync_ptsz(
+    const CUexternalSemaphore *extSemArray,
+    const CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS *paramsArray,
+    unsigned int numExtSems, CUstream stream) {
+  return cuSignalExternalSemaphoresAsync(extSemArray, paramsArray, numExtSems,
+                                         stream ? stream
+                                                : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuStreamAttachMemAsync_ptsz(CUstream hStream,
+                                                CUdeviceptr dptr, size_t length,
+                                                unsigned int flags) {
+  return cuStreamAttachMemAsync(hStream ? hStream : CU_STREAM_PER_THREAD, dptr,
+                                length, flags);
+}
+extern "C" CUresult
+cuStreamBatchMemOp_v2_ptsz(CUstream stream, unsigned int count,
+                           CUstreamBatchMemOpParams *paramArray,
+                           unsigned int flags) {
+  return cuStreamBatchMemOp_v2(stream ? stream : CU_STREAM_PER_THREAD, count,
+                               paramArray, flags);
+}
 extern "C" CUresult
 cuStreamBeginCaptureToGraph(CUstream hStream, CUgraph hGraph,
                             const CUgraphNode *dependencies,
                             const CUgraphEdgeData *dependencyData,
                             size_t numDependencies, CUstreamCaptureMode mode);
-#ifdef cuStreamGetCaptureInfo_v3
-#undef cuStreamGetCaptureInfo_v3
-#endif
+extern "C" CUresult cuStreamBeginCaptureToGraph_ptsz(
+    CUstream hStream, CUgraph hGraph, const CUgraphNode *dependencies,
+    const CUgraphEdgeData *dependencyData, size_t numDependencies,
+    CUstreamCaptureMode mode) {
+  return cuStreamBeginCaptureToGraph(hStream ? hStream : CU_STREAM_PER_THREAD,
+                                     hGraph, dependencies, dependencyData,
+                                     numDependencies, mode);
+}
+extern "C" CUresult cuStreamBeginCapture_v2_ptsz(CUstream hStream,
+                                                 CUstreamCaptureMode mode) {
+  return cuStreamBeginCapture_v2(hStream ? hStream : CU_STREAM_PER_THREAD,
+                                 mode);
+}
+extern "C" CUresult cuStreamCopyAttributes_ptsz(CUstream dst, CUstream src) {
+  return cuStreamCopyAttributes(dst ? dst : CU_STREAM_PER_THREAD,
+                                src ? src : CU_STREAM_PER_THREAD);
+}
+extern "C" CUresult cuStreamEndCapture_ptsz(CUstream hStream,
+                                            CUgraph *phGraph) {
+  return cuStreamEndCapture(hStream ? hStream : CU_STREAM_PER_THREAD, phGraph);
+}
+extern "C" CUresult cuStreamGetAttribute_ptsz(CUstream hStream,
+                                              CUstreamAttrID attr,
+                                              CUstreamAttrValue *value_out) {
+  return cuStreamGetAttribute(hStream ? hStream : CU_STREAM_PER_THREAD, attr,
+                              value_out);
+}
 extern "C" CUresult cuStreamGetCaptureInfo_v3(
     CUstream hStream, CUstreamCaptureStatus *captureStatus_out,
     cuuint64_t *id_out, CUgraph *graph_out,
     const CUgraphNode **dependencies_out, const CUgraphEdgeData **edgeData_out,
     size_t *numDependencies_out);
-#ifdef cuStreamGetCaptureInfo
-#undef cuStreamGetCaptureInfo
-#endif
-extern "C" CUresult
-cuStreamGetCaptureInfo(CUstream hStream,
-                       CUstreamCaptureStatus *captureStatus_out,
-                       cuuint64_t *id_out);
-#ifdef cuStreamGetCaptureInfo_v2
-#undef cuStreamGetCaptureInfo_v2
-#endif
-extern "C" CUresult cuStreamGetCaptureInfo_v2(
-    CUstream hStream, CUstreamCaptureStatus *captureStatus_out,
-    cuuint64_t *id_out, CUgraph *graph_out,
-    const CUgraphNode **dependencies_out, size_t *numDependencies_out);
-#ifdef cuStreamUpdateCaptureDependencies
-#undef cuStreamUpdateCaptureDependencies
-#endif
-extern "C" CUresult cuStreamUpdateCaptureDependencies(CUstream hStream,
-                                                      CUgraphNode *dependencies,
-                                                      size_t numDependencies,
-                                                      unsigned int flags);
-#ifdef cuStreamUpdateCaptureDependencies_v2
-#undef cuStreamUpdateCaptureDependencies_v2
-#endif
-extern "C" CUresult cuStreamUpdateCaptureDependencies_v2(
-    CUstream hStream, CUgraphNode *dependencies,
-    const CUgraphEdgeData *dependencyData, size_t numDependencies,
-    unsigned int flags);
-extern "C" CUresult CUDAAPI cuEventRecord_ptsz(CUevent hEvent,
-                                               CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuEventRecord(hEvent, hStream);
-}
-extern "C" CUresult CUDAAPI cuEventRecordWithFlags_ptsz(CUevent hEvent,
-                                                        CUstream hStream,
-                                                        unsigned int flags) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuEventRecordWithFlags(hEvent, hStream, flags);
-}
-extern "C" CUresult CUDAAPI cuGraphInstantiateWithParams_ptsz(
-    CUgraphExec *phGraphExec, CUgraph hGraph,
-    CUDA_GRAPH_INSTANTIATE_PARAMS *instantiateParams) {
-  auto *original_instantiateParams = instantiateParams;
-  CUDA_GRAPH_INSTANTIATE_PARAMS adjusted;
-  if (instantiateParams) {
-    adjusted = *instantiateParams;
-    adjusted.hUploadStream = lupine_per_thread_stream(adjusted.hUploadStream);
-    instantiateParams = &adjusted;
-  }
-  CUresult result =
-      cuGraphInstantiateWithParams(phGraphExec, hGraph, instantiateParams);
-  if (original_instantiateParams) {
-    adjusted.hUploadStream = original_instantiateParams->hUploadStream;
-    *original_instantiateParams = adjusted;
-  }
-  return result;
-}
-extern "C" CUresult CUDAAPI cuGraphLaunch_ptsz(CUgraphExec hGraphExec,
-                                               CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuGraphLaunch(hGraphExec, hStream);
-}
-extern "C" CUresult CUDAAPI cuGraphUpload_ptsz(CUgraphExec hGraphExec,
-                                               CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuGraphUpload(hGraphExec, hStream);
-}
-extern "C" CUresult CUDAAPI cuGraphicsMapResources_ptsz(
-    unsigned int count, CUgraphicsResource *resources, CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuGraphicsMapResources(count, resources, hStream);
-}
-extern "C" CUresult CUDAAPI cuGraphicsUnmapResources_ptsz(
-    unsigned int count, CUgraphicsResource *resources, CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuGraphicsUnmapResources(count, resources, hStream);
-}
-extern "C" CUresult CUDAAPI cuLaunchCooperativeKernel_ptsz(
-    CUfunction f, unsigned int gridDimX, unsigned int gridDimY,
-    unsigned int gridDimZ, unsigned int blockDimX, unsigned int blockDimY,
-    unsigned int blockDimZ, unsigned int sharedMemBytes, CUstream hStream,
-    void **kernelParams) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuLaunchCooperativeKernel(f, gridDimX, gridDimY, gridDimZ, blockDimX,
-                                   blockDimY, blockDimZ, sharedMemBytes,
-                                   hStream, kernelParams);
-}
-extern "C" CUresult CUDAAPI cuLaunchHostFunc_ptsz(CUstream hStream, CUhostFn fn,
-                                                  void *userData) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuLaunchHostFunc(hStream, fn, userData);
-}
-extern "C" CUresult CUDAAPI cuLaunchKernel_ptsz(
-    CUfunction f, unsigned int gridDimX, unsigned int gridDimY,
-    unsigned int gridDimZ, unsigned int blockDimX, unsigned int blockDimY,
-    unsigned int blockDimZ, unsigned int sharedMemBytes, CUstream hStream,
-    void **kernelParams, void **extra) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuLaunchKernel(f, gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY,
-                        blockDimZ, sharedMemBytes, hStream, kernelParams,
-                        extra);
-}
-extern "C" CUresult CUDAAPI cuLaunchKernelEx_ptsz(const CUlaunchConfig *config,
-                                                  CUfunction f,
-                                                  void **kernelParams,
-                                                  void **extra) {
-  CUlaunchConfig adjusted;
-  if (config) {
-    adjusted = *config;
-    adjusted.hStream = lupine_per_thread_stream(adjusted.hStream);
-    config = &adjusted;
-  }
-  return cuLaunchKernelEx(config, f, kernelParams, extra);
-}
-extern "C" CUresult CUDAAPI cuMemAllocAsync_ptsz(CUdeviceptr *dptr,
-                                                 size_t bytesize,
-                                                 CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemAllocAsync(dptr, bytesize, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemAllocFromPoolAsync_ptsz(CUdeviceptr *dptr,
-                                                         size_t bytesize,
-                                                         CUmemoryPool pool,
-                                                         CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemAllocFromPoolAsync(dptr, bytesize, pool, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemFreeAsync_ptsz(CUdeviceptr dptr,
-                                                CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemFreeAsync(dptr, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemMapArrayAsync_ptsz(CUarrayMapInfo *mapInfoList,
-                                                    unsigned int count,
-                                                    CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemMapArrayAsync(mapInfoList, count, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemPrefetchAsync_ptsz(CUdeviceptr devPtr,
-                                                    size_t count,
-                                                    CUdevice dstDevice,
-                                                    CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemPrefetchAsync(devPtr, count, dstDevice, hStream);
-}
-#if CUDA_VERSION >= 12020
-extern "C" CUresult CUDAAPI cuMemPrefetchAsync_v2_ptsz(CUdeviceptr devPtr,
-                                                       size_t count,
-                                                       CUmemLocation location,
-                                                       unsigned int flags,
-                                                       CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemPrefetchAsync_v2(devPtr, count, location, flags, hStream);
-}
-#endif
-extern "C" CUresult CUDAAPI cuMemcpy_ptds(CUdeviceptr dst, CUdeviceptr src,
-                                          size_t ByteCount) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemcpy(dst, src, ByteCount);
-}
-extern "C" CUresult CUDAAPI cuMemcpy2DAsync_v2_ptsz(const CUDA_MEMCPY2D *pCopy,
-                                                    CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemcpy2DAsync_v2(pCopy, hStream);
-}
-extern "C" CUresult CUDAAPI
-cuMemcpy2DUnaligned_v2_ptds(const CUDA_MEMCPY2D *pCopy) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemcpy2DUnaligned_v2(pCopy);
-}
-extern "C" CUresult CUDAAPI cuMemcpy2D_v2_ptds(const CUDA_MEMCPY2D *pCopy) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemcpy2D_v2(pCopy);
-}
-extern "C" CUresult CUDAAPI cuMemcpy3DAsync_v2_ptsz(const CUDA_MEMCPY3D *pCopy,
-                                                    CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemcpy3DAsync_v2(pCopy, hStream);
-}
-extern "C" CUresult CUDAAPI
-cuMemcpy3DPeer_ptds(const CUDA_MEMCPY3D_PEER *pCopy) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemcpy3DPeer(pCopy);
-}
-extern "C" CUresult CUDAAPI
-cuMemcpy3DPeerAsync_ptsz(const CUDA_MEMCPY3D_PEER *pCopy, CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemcpy3DPeerAsync(pCopy, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemcpy3D_v2_ptds(const CUDA_MEMCPY3D *pCopy) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemcpy3D_v2(pCopy);
-}
-extern "C" CUresult CUDAAPI cuMemcpyAtoA_v2_ptds(CUarray dstArray,
-                                                 size_t dstOffset,
-                                                 CUarray srcArray,
-                                                 size_t srcOffset,
-                                                 size_t ByteCount) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemcpyAtoA_v2(dstArray, dstOffset, srcArray, srcOffset, ByteCount);
-}
-extern "C" CUresult CUDAAPI cuMemcpyAtoD_v2_ptds(CUdeviceptr dstDevice,
-                                                 CUarray srcArray,
-                                                 size_t srcOffset,
-                                                 size_t ByteCount) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemcpyAtoD_v2(dstDevice, srcArray, srcOffset, ByteCount);
-}
-extern "C" CUresult CUDAAPI cuMemcpyAtoHAsync_v2_ptsz(void *dstHost,
-                                                      CUarray srcArray,
-                                                      size_t srcOffset,
-                                                      size_t ByteCount,
-                                                      CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemcpyAtoHAsync_v2(dstHost, srcArray, srcOffset, ByteCount, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemcpyAtoH_v2_ptds(void *dstHost,
-                                                 CUarray srcArray,
-                                                 size_t srcOffset,
-                                                 size_t ByteCount) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemcpyAtoH_v2(dstHost, srcArray, srcOffset, ByteCount);
-}
-extern "C" CUresult CUDAAPI cuMemcpyDtoA_v2_ptds(CUarray dstArray,
-                                                 size_t dstOffset,
-                                                 CUdeviceptr srcDevice,
-                                                 size_t ByteCount) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemcpyDtoA_v2(dstArray, dstOffset, srcDevice, ByteCount);
-}
-extern "C" CUresult CUDAAPI cuMemcpyDtoDAsync_v2_ptsz(CUdeviceptr dstDevice,
-                                                      CUdeviceptr srcDevice,
-                                                      size_t ByteCount,
-                                                      CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemcpyDtoDAsync_v2(dstDevice, srcDevice, ByteCount, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemcpyDtoD_v2_ptds(CUdeviceptr dstDevice,
-                                                 CUdeviceptr srcDevice,
-                                                 size_t ByteCount) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemcpyDtoD_v2(dstDevice, srcDevice, ByteCount);
-}
-extern "C" CUresult CUDAAPI cuMemcpyDtoHAsync_v2_ptsz(void *dstHost,
-                                                      CUdeviceptr srcDevice,
-                                                      size_t ByteCount,
-                                                      CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemcpyDtoHAsync_v2(dstHost, srcDevice, ByteCount, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemcpyDtoH_v2_ptds(void *dstHost,
-                                                 CUdeviceptr srcDevice,
-                                                 size_t ByteCount) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemcpyDtoH_v2(dstHost, srcDevice, ByteCount);
-}
-extern "C" CUresult CUDAAPI cuMemcpyHtoDAsync_v2_ptsz(CUdeviceptr dstDevice,
-                                                      const void *srcHost,
-                                                      size_t ByteCount,
-                                                      CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemcpyHtoDAsync_v2(dstDevice, srcHost, ByteCount, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemcpyHtoD_v2_ptds(CUdeviceptr dstDevice,
-                                                 const void *srcHost,
-                                                 size_t ByteCount) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemcpyHtoD_v2(dstDevice, srcHost, ByteCount);
-}
-extern "C" CUresult CUDAAPI cuMemcpyPeer_ptds(CUdeviceptr dstDevice,
-                                              CUcontext dstContext,
-                                              CUdeviceptr srcDevice,
-                                              CUcontext srcContext,
-                                              size_t ByteCount) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemcpyPeer(dstDevice, dstContext, srcDevice, srcContext, ByteCount);
-}
-extern "C" CUresult CUDAAPI cuMemcpyPeerAsync_ptsz(
-    CUdeviceptr dstDevice, CUcontext dstContext, CUdeviceptr srcDevice,
-    CUcontext srcContext, size_t ByteCount, CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemcpyPeerAsync(dstDevice, dstContext, srcDevice, srcContext,
-                           ByteCount, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemsetD16Async_ptsz(CUdeviceptr dstDevice,
-                                                  unsigned short us, size_t N,
-                                                  CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemsetD16Async(dstDevice, us, N, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemsetD16_v2_ptds(CUdeviceptr dstDevice,
-                                                unsigned short us, size_t N) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemsetD16_v2(dstDevice, us, N);
-}
-extern "C" CUresult CUDAAPI cuMemsetD2D16Async_ptsz(CUdeviceptr dstDevice,
-                                                    size_t dstPitch,
-                                                    unsigned short us,
-                                                    size_t Width, size_t Height,
-                                                    CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemsetD2D16Async(dstDevice, dstPitch, us, Width, Height, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemsetD2D16_v2_ptds(CUdeviceptr dstDevice,
-                                                  size_t dstPitch,
-                                                  unsigned short us,
-                                                  size_t Width, size_t Height) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemsetD2D16_v2(dstDevice, dstPitch, us, Width, Height);
-}
-extern "C" CUresult CUDAAPI cuMemsetD2D32Async_ptsz(CUdeviceptr dstDevice,
-                                                    size_t dstPitch,
-                                                    unsigned int ui,
-                                                    size_t Width, size_t Height,
-                                                    CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemsetD2D32Async(dstDevice, dstPitch, ui, Width, Height, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemsetD2D32_v2_ptds(CUdeviceptr dstDevice,
-                                                  size_t dstPitch,
-                                                  unsigned int ui, size_t Width,
-                                                  size_t Height) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemsetD2D32_v2(dstDevice, dstPitch, ui, Width, Height);
-}
-extern "C" CUresult CUDAAPI cuMemsetD2D8Async_ptsz(CUdeviceptr dstDevice,
-                                                   size_t dstPitch,
-                                                   unsigned char uc,
-                                                   size_t Width, size_t Height,
-                                                   CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemsetD2D8Async(dstDevice, dstPitch, uc, Width, Height, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemsetD2D8_v2_ptds(CUdeviceptr dstDevice,
-                                                 size_t dstPitch,
-                                                 unsigned char uc, size_t Width,
-                                                 size_t Height) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemsetD2D8_v2(dstDevice, dstPitch, uc, Width, Height);
-}
-extern "C" CUresult CUDAAPI cuMemsetD32Async_ptsz(CUdeviceptr dstDevice,
-                                                  unsigned int ui, size_t N,
-                                                  CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemsetD32Async(dstDevice, ui, N, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemsetD32_v2_ptds(CUdeviceptr dstDevice,
-                                                unsigned int ui, size_t N) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemsetD32_v2(dstDevice, ui, N);
-}
-extern "C" CUresult CUDAAPI cuMemsetD8Async_ptsz(CUdeviceptr dstDevice,
-                                                 unsigned char uc, size_t N,
-                                                 CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuMemsetD8Async(dstDevice, uc, N, hStream);
-}
-extern "C" CUresult CUDAAPI cuMemsetD8_v2_ptds(CUdeviceptr dstDevice,
-                                               unsigned char uc, size_t N) {
-  lupine_per_thread_stream_scope scope;
-  return cuMemsetD8_v2(dstDevice, uc, N);
-}
-extern "C" CUresult CUDAAPI cuSignalExternalSemaphoresAsync_ptsz(
-    const CUexternalSemaphore *extSemArray,
-    const CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS *paramsArray,
-    unsigned int numExtSems, CUstream stream) {
-  stream = lupine_per_thread_stream(stream);
-  return cuSignalExternalSemaphoresAsync(extSemArray, paramsArray, numExtSems,
-                                         stream);
-}
-extern "C" CUresult CUDAAPI cuStreamAddCallback_ptsz(CUstream hStream,
-                                                     CUstreamCallback callback,
-                                                     void *userData,
-                                                     unsigned int flags) {
-  return lupine_stream_add_callback_per_thread(hStream, callback, userData,
-                                               flags);
-}
-extern "C" CUresult CUDAAPI cuStreamAttachMemAsync_ptsz(CUstream hStream,
-                                                        CUdeviceptr dptr,
-                                                        size_t length,
-                                                        unsigned int flags) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamAttachMemAsync(hStream, dptr, length, flags);
-}
-extern "C" CUresult CUDAAPI cuStreamBatchMemOp_v2_ptsz(
-    CUstream stream, unsigned int count, CUstreamBatchMemOpParams *paramArray,
-    unsigned int flags) {
-  stream = lupine_per_thread_stream(stream);
-  return cuStreamBatchMemOp_v2(stream, count, paramArray, flags);
-}
-extern "C" CUresult CUDAAPI cuStreamBeginCapture_ptsz(CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamBeginCapture_v2(hStream, CU_STREAM_CAPTURE_MODE_GLOBAL);
-}
-extern "C" CUresult CUDAAPI cuStreamBeginCaptureToGraph_ptsz(
-    CUstream hStream, CUgraph hGraph, const CUgraphNode *dependencies,
-    const CUgraphEdgeData *dependencyData, size_t numDependencies,
-    CUstreamCaptureMode mode) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamBeginCaptureToGraph(hStream, hGraph, dependencies,
-                                     dependencyData, numDependencies, mode);
-}
-extern "C" CUresult CUDAAPI
-cuStreamBeginCapture_v2_ptsz(CUstream hStream, CUstreamCaptureMode mode) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamBeginCapture_v2(hStream, mode);
-}
-extern "C" CUresult CUDAAPI cuStreamCopyAttributes_ptsz(CUstream dst,
-                                                        CUstream src) {
-  dst = lupine_per_thread_stream(dst);
-  src = lupine_per_thread_stream(src);
-  return cuStreamCopyAttributes(dst, src);
-}
-extern "C" CUresult CUDAAPI cuStreamEndCapture_ptsz(CUstream hStream,
-                                                    CUgraph *phGraph) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamEndCapture(hStream, phGraph);
-}
-extern "C" CUresult CUDAAPI cuStreamGetAttribute_ptsz(
-    CUstream hStream, CUstreamAttrID attr, CUstreamAttrValue *value_out) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamGetAttribute(hStream, attr, value_out);
-}
-extern "C" CUresult CUDAAPI cuStreamGetCaptureInfo_ptsz(
-    CUstream hStream, CUstreamCaptureStatus *captureStatus_out,
-    cuuint64_t *id_out) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamGetCaptureInfo(hStream, captureStatus_out, id_out);
-}
-extern "C" CUresult CUDAAPI cuStreamGetCaptureInfo_v2_ptsz(
-    CUstream hStream, CUstreamCaptureStatus *captureStatus_out,
-    cuuint64_t *id_out, CUgraph *graph_out,
-    const CUgraphNode **dependencies_out, size_t *numDependencies_out) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamGetCaptureInfo_v2(hStream, captureStatus_out, id_out,
-                                   graph_out, dependencies_out,
-                                   numDependencies_out);
-}
-extern "C" CUresult CUDAAPI cuStreamGetCaptureInfo_v3_ptsz(
+extern "C" CUresult cuStreamGetCaptureInfo_v3_ptsz(
     CUstream hStream, CUstreamCaptureStatus *captureStatus_out,
     cuuint64_t *id_out, CUgraph *graph_out,
     const CUgraphNode **dependencies_out, const CUgraphEdgeData **edgeData_out,
     size_t *numDependencies_out) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamGetCaptureInfo_v3(hStream, captureStatus_out, id_out,
-                                   graph_out, dependencies_out, edgeData_out,
-                                   numDependencies_out);
+  return cuStreamGetCaptureInfo_v3(
+      hStream ? hStream : CU_STREAM_PER_THREAD, captureStatus_out, id_out,
+      graph_out, dependencies_out, edgeData_out, numDependencies_out);
 }
-extern "C" CUresult CUDAAPI cuStreamGetCtx_ptsz(CUstream hStream,
-                                                CUcontext *pctx) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamGetCtx(hStream, pctx);
+extern "C" CUresult cuStreamGetCtx_ptsz(CUstream hStream, CUcontext *pctx) {
+  return cuStreamGetCtx(hStream ? hStream : CU_STREAM_PER_THREAD, pctx);
 }
 #if CUDA_VERSION >= 13010
-extern "C" CUresult CUDAAPI cuStreamGetDevResource_ptsz(
-    CUstream hStream, CUdevResource *resource, CUdevResourceType type) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamGetDevResource(hStream, resource, type);
+extern "C" CUresult cuStreamGetDevResource_ptsz(CUstream hStream,
+                                                CUdevResource *resource,
+                                                CUdevResourceType type) {
+  return cuStreamGetDevResource(hStream ? hStream : CU_STREAM_PER_THREAD,
+                                resource, type);
 }
 #endif
-extern "C" CUresult CUDAAPI cuStreamGetDevice_ptsz(CUstream hStream,
-                                                   CUdevice *device) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamGetDevice(hStream, device);
+extern "C" CUresult cuStreamGetDevice_ptsz(CUstream hStream, CUdevice *device) {
+  return cuStreamGetDevice(hStream ? hStream : CU_STREAM_PER_THREAD, device);
 }
-extern "C" CUresult CUDAAPI cuStreamGetFlags_ptsz(CUstream hStream,
-                                                  unsigned int *flags) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamGetFlags(hStream, flags);
+extern "C" CUresult cuStreamGetFlags_ptsz(CUstream hStream,
+                                          unsigned int *flags) {
+  return cuStreamGetFlags(hStream ? hStream : CU_STREAM_PER_THREAD, flags);
 }
-extern "C" CUresult CUDAAPI cuStreamGetId_ptsz(CUstream hStream,
-                                               unsigned long long *streamId) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamGetId(hStream, streamId);
+extern "C" CUresult cuStreamGetId_ptsz(CUstream hStream,
+                                       unsigned long long *streamId) {
+  return cuStreamGetId(hStream ? hStream : CU_STREAM_PER_THREAD, streamId);
 }
-extern "C" CUresult CUDAAPI cuStreamGetPriority_ptsz(CUstream hStream,
-                                                     int *priority) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamGetPriority(hStream, priority);
+extern "C" CUresult cuStreamGetPriority_ptsz(CUstream hStream, int *priority) {
+  return cuStreamGetPriority(hStream ? hStream : CU_STREAM_PER_THREAD,
+                             priority);
 }
-extern "C" CUresult CUDAAPI cuStreamIsCapturing_ptsz(
-    CUstream hStream, CUstreamCaptureStatus *captureStatus) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamIsCapturing(hStream, captureStatus);
+extern "C" CUresult
+cuStreamIsCapturing_ptsz(CUstream hStream,
+                         CUstreamCaptureStatus *captureStatus) {
+  return cuStreamIsCapturing(hStream ? hStream : CU_STREAM_PER_THREAD,
+                             captureStatus);
 }
-extern "C" CUresult CUDAAPI cuStreamQuery_ptsz(CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamQuery(hStream);
+extern "C" CUresult cuStreamQuery_ptsz(CUstream hStream) {
+  return cuStreamQuery(hStream ? hStream : CU_STREAM_PER_THREAD);
 }
-extern "C" CUresult CUDAAPI cuStreamSetAttribute_ptsz(
-    CUstream hStream, CUstreamAttrID attr, const CUstreamAttrValue *value) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamSetAttribute(hStream, attr, value);
+extern "C" CUresult cuStreamSetAttribute_ptsz(CUstream hStream,
+                                              CUstreamAttrID attr,
+                                              const CUstreamAttrValue *value) {
+  return cuStreamSetAttribute(hStream ? hStream : CU_STREAM_PER_THREAD, attr,
+                              value);
 }
-extern "C" CUresult CUDAAPI cuStreamSynchronize_ptsz(CUstream hStream) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamSynchronize(hStream);
+extern "C" CUresult cuStreamSynchronize_ptsz(CUstream hStream) {
+  return cuStreamSynchronize(hStream ? hStream : CU_STREAM_PER_THREAD);
 }
-extern "C" CUresult CUDAAPI cuStreamUpdateCaptureDependencies_ptsz(
-    CUstream hStream, CUgraphNode *dependencies, size_t numDependencies,
-    unsigned int flags) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamUpdateCaptureDependencies_v2(hStream, dependencies, nullptr,
-                                              numDependencies, flags);
-}
-extern "C" CUresult CUDAAPI cuStreamUpdateCaptureDependencies_v2_ptsz(
+extern "C" CUresult cuStreamUpdateCaptureDependencies_v2(
+    CUstream hStream, CUgraphNode *dependencies,
+    const CUgraphEdgeData *dependencyData, size_t numDependencies,
+    unsigned int flags);
+extern "C" CUresult cuStreamUpdateCaptureDependencies_v2_ptsz(
     CUstream hStream, CUgraphNode *dependencies,
     const CUgraphEdgeData *dependencyData, size_t numDependencies,
     unsigned int flags) {
-  hStream = lupine_per_thread_stream(hStream);
   return cuStreamUpdateCaptureDependencies_v2(
-      hStream, dependencies, dependencyData, numDependencies, flags);
+      hStream ? hStream : CU_STREAM_PER_THREAD, dependencies, dependencyData,
+      numDependencies, flags);
 }
-extern "C" CUresult CUDAAPI cuStreamWaitEvent_ptsz(CUstream hStream,
-                                                   CUevent hEvent,
-                                                   unsigned int Flags) {
-  hStream = lupine_per_thread_stream(hStream);
-  return cuStreamWaitEvent(hStream, hEvent, Flags);
+extern "C" CUresult cuStreamWaitEvent_ptsz(CUstream hStream, CUevent hEvent,
+                                           unsigned int Flags) {
+  return cuStreamWaitEvent(hStream ? hStream : CU_STREAM_PER_THREAD, hEvent,
+                           Flags);
 }
-extern "C" CUresult CUDAAPI cuStreamWaitValue32_v2_ptsz(CUstream stream,
-                                                        CUdeviceptr addr,
-                                                        cuuint32_t value,
-                                                        unsigned int flags) {
-  stream = lupine_per_thread_stream(stream);
-  return cuStreamWaitValue32_v2(stream, addr, value, flags);
+extern "C" CUresult cuStreamWaitValue32_v2_ptsz(CUstream stream,
+                                                CUdeviceptr addr,
+                                                cuuint32_t value,
+                                                unsigned int flags) {
+  return cuStreamWaitValue32_v2(stream ? stream : CU_STREAM_PER_THREAD, addr,
+                                value, flags);
 }
-extern "C" CUresult CUDAAPI cuStreamWaitValue64_v2_ptsz(CUstream stream,
-                                                        CUdeviceptr addr,
-                                                        cuuint64_t value,
-                                                        unsigned int flags) {
-  stream = lupine_per_thread_stream(stream);
-  return cuStreamWaitValue64_v2(stream, addr, value, flags);
+extern "C" CUresult cuStreamWaitValue64_v2_ptsz(CUstream stream,
+                                                CUdeviceptr addr,
+                                                cuuint64_t value,
+                                                unsigned int flags) {
+  return cuStreamWaitValue64_v2(stream ? stream : CU_STREAM_PER_THREAD, addr,
+                                value, flags);
 }
-extern "C" CUresult CUDAAPI cuStreamWriteValue32_v2_ptsz(CUstream stream,
-                                                         CUdeviceptr addr,
-                                                         cuuint32_t value,
-                                                         unsigned int flags) {
-  stream = lupine_per_thread_stream(stream);
-  return cuStreamWriteValue32_v2(stream, addr, value, flags);
+extern "C" CUresult cuStreamWriteValue32_v2_ptsz(CUstream stream,
+                                                 CUdeviceptr addr,
+                                                 cuuint32_t value,
+                                                 unsigned int flags) {
+  return cuStreamWriteValue32_v2(stream ? stream : CU_STREAM_PER_THREAD, addr,
+                                 value, flags);
 }
-extern "C" CUresult CUDAAPI cuStreamWriteValue64_v2_ptsz(CUstream stream,
-                                                         CUdeviceptr addr,
-                                                         cuuint64_t value,
-                                                         unsigned int flags) {
-  stream = lupine_per_thread_stream(stream);
-  return cuStreamWriteValue64_v2(stream, addr, value, flags);
+extern "C" CUresult cuStreamWriteValue64_v2_ptsz(CUstream stream,
+                                                 CUdeviceptr addr,
+                                                 cuuint64_t value,
+                                                 unsigned int flags) {
+  return cuStreamWriteValue64_v2(stream ? stream : CU_STREAM_PER_THREAD, addr,
+                                 value, flags);
 }
-extern "C" CUresult CUDAAPI cuWaitExternalSemaphoresAsync_ptsz(
+extern "C" CUresult cuWaitExternalSemaphoresAsync_ptsz(
     const CUexternalSemaphore *extSemArray,
     const CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS *paramsArray,
     unsigned int numExtSems, CUstream stream) {
-  stream = lupine_per_thread_stream(stream);
   return cuWaitExternalSemaphoresAsync(extSemArray, paramsArray, numExtSems,
-                                       stream);
+                                       stream ? stream : CU_STREAM_PER_THREAD);
 }
-void *lupine_stream_function(const char *name, int version, bool per_thread) {
-  if (strcmp(name, "cuStreamBeginCapture") == 0) {
-    if (version >= 10010)
-      return per_thread ? (void *)&cuStreamBeginCapture_v2_ptsz
-                        : (void *)&cuStreamBeginCapture_v2;
-    if (version >= 0)
-      return per_thread ? (void *)&cuStreamBeginCapture_ptsz
-                        : (void *)&cuStreamBeginCapture;
-  }
-  if (strcmp(name, "cuStreamGetCaptureInfo") == 0) {
-    if (version >= 12030)
-      return per_thread ? (void *)&cuStreamGetCaptureInfo_v3_ptsz
-                        : (void *)&cuStreamGetCaptureInfo_v3;
-    if (version >= 11030)
-      return per_thread ? (void *)&cuStreamGetCaptureInfo_v2_ptsz
-                        : (void *)&cuStreamGetCaptureInfo_v2;
-    if (version >= 0)
-      return per_thread ? (void *)&cuStreamGetCaptureInfo_ptsz
-                        : (void *)&cuStreamGetCaptureInfo;
-  }
-  if (strcmp(name, "cuStreamUpdateCaptureDependencies") == 0) {
-    if (version >= 12030)
-      return per_thread ? (void *)&cuStreamUpdateCaptureDependencies_v2_ptsz
-                        : (void *)&cuStreamUpdateCaptureDependencies_v2;
-    if (version >= 0)
-      return per_thread ? (void *)&cuStreamUpdateCaptureDependencies_ptsz
-                        : (void *)&cuStreamUpdateCaptureDependencies;
-  }
-  if (strcmp(name, "cuMemPrefetchAsync") == 0) {
+static const std::unordered_map<void *, void *> perThreadFunctionMap = {
+    {(void *)cuMemcpy, (void *)cuMemcpy_ptds},
+    {(void *)cuMemcpy2DUnaligned_v2, (void *)cuMemcpy2DUnaligned_v2_ptds},
+    {(void *)cuMemcpy2D_v2, (void *)cuMemcpy2D_v2_ptds},
+    {(void *)cuMemcpy3DPeer, (void *)cuMemcpy3DPeer_ptds},
+    {(void *)cuMemcpy3D_v2, (void *)cuMemcpy3D_v2_ptds},
+    {(void *)cuMemcpyAtoA_v2, (void *)cuMemcpyAtoA_v2_ptds},
+    {(void *)cuMemcpyAtoD_v2, (void *)cuMemcpyAtoD_v2_ptds},
+    {(void *)cuMemcpyAtoH_v2, (void *)cuMemcpyAtoH_v2_ptds},
+    {(void *)cuMemcpyDtoA_v2, (void *)cuMemcpyDtoA_v2_ptds},
+    {(void *)cuMemcpyDtoD_v2, (void *)cuMemcpyDtoD_v2_ptds},
+    {(void *)cuMemcpyDtoH_v2, (void *)cuMemcpyDtoH_v2_ptds},
+    {(void *)cuMemcpyHtoD_v2, (void *)cuMemcpyHtoD_v2_ptds},
+    {(void *)cuMemcpyPeer, (void *)cuMemcpyPeer_ptds},
+    {(void *)cuMemsetD16_v2, (void *)cuMemsetD16_v2_ptds},
+    {(void *)cuMemsetD2D16_v2, (void *)cuMemsetD2D16_v2_ptds},
+    {(void *)cuMemsetD2D32_v2, (void *)cuMemsetD2D32_v2_ptds},
+    {(void *)cuMemsetD2D8_v2, (void *)cuMemsetD2D8_v2_ptds},
+    {(void *)cuMemsetD32_v2, (void *)cuMemsetD32_v2_ptds},
+    {(void *)cuMemsetD8_v2, (void *)cuMemsetD8_v2_ptds},
+    {(void *)cuEventRecord, (void *)cuEventRecord_ptsz},
+    {(void *)cuEventRecordWithFlags, (void *)cuEventRecordWithFlags_ptsz},
+    {(void *)cuGraphInstantiateWithParams,
+     (void *)cuGraphInstantiateWithParams_ptsz},
+    {(void *)cuGraphLaunch, (void *)cuGraphLaunch_ptsz},
+    {(void *)cuGraphUpload, (void *)cuGraphUpload_ptsz},
+    {(void *)cuGraphicsMapResources, (void *)cuGraphicsMapResources_ptsz},
+    {(void *)cuGraphicsUnmapResources, (void *)cuGraphicsUnmapResources_ptsz},
+    {(void *)cuLaunchCooperativeKernel, (void *)cuLaunchCooperativeKernel_ptsz},
+    {(void *)cuLaunchHostFunc, (void *)cuLaunchHostFunc_ptsz},
+    {(void *)cuLaunchKernel, (void *)cuLaunchKernel_ptsz},
+    {(void *)cuLaunchKernelEx, (void *)cuLaunchKernelEx_ptsz},
+    {(void *)cuMemAllocAsync, (void *)cuMemAllocAsync_ptsz},
+    {(void *)cuMemAllocFromPoolAsync, (void *)cuMemAllocFromPoolAsync_ptsz},
+    {(void *)cuMemFreeAsync, (void *)cuMemFreeAsync_ptsz},
+    {(void *)cuMemMapArrayAsync, (void *)cuMemMapArrayAsync_ptsz},
 #if CUDA_VERSION >= 12020
-    if (version >= 12020)
-      return per_thread ? (void *)&cuMemPrefetchAsync_v2_ptsz
-                        : (void *)&cuMemPrefetchAsync_v2;
+    {(void *)cuMemPrefetchAsync_v2, (void *)cuMemPrefetchAsync_v2_ptsz},
 #endif
-    if (version >= 0)
-      return per_thread ? (void *)&cuMemPrefetchAsync_ptsz
-                        : (void *)&cuMemPrefetchAsync;
-  }
-  if (strcmp(name, "cuEventRecord") == 0)
-    return per_thread ? (void *)&cuEventRecord_ptsz : (void *)&cuEventRecord;
-  if (strcmp(name, "cuEventRecordWithFlags") == 0)
-    return per_thread ? (void *)&cuEventRecordWithFlags_ptsz
-                      : (void *)&cuEventRecordWithFlags;
-  if (strcmp(name, "cuGraphInstantiateWithParams") == 0)
-    return per_thread ? (void *)&cuGraphInstantiateWithParams_ptsz
-                      : (void *)&cuGraphInstantiateWithParams;
-  if (strcmp(name, "cuGraphLaunch") == 0)
-    return per_thread ? (void *)&cuGraphLaunch_ptsz : (void *)&cuGraphLaunch;
-  if (strcmp(name, "cuGraphUpload") == 0)
-    return per_thread ? (void *)&cuGraphUpload_ptsz : (void *)&cuGraphUpload;
-  if (strcmp(name, "cuGraphicsMapResources") == 0)
-    return per_thread ? (void *)&cuGraphicsMapResources_ptsz
-                      : (void *)&cuGraphicsMapResources;
-  if (strcmp(name, "cuGraphicsUnmapResources") == 0)
-    return per_thread ? (void *)&cuGraphicsUnmapResources_ptsz
-                      : (void *)&cuGraphicsUnmapResources;
-  if (strcmp(name, "cuLaunchCooperativeKernel") == 0)
-    return per_thread ? (void *)&cuLaunchCooperativeKernel_ptsz
-                      : (void *)&cuLaunchCooperativeKernel;
-  if (strcmp(name, "cuLaunchHostFunc") == 0)
-    return per_thread ? (void *)&cuLaunchHostFunc_ptsz
-                      : (void *)&cuLaunchHostFunc;
-  if (strcmp(name, "cuLaunchKernel") == 0)
-    return per_thread ? (void *)&cuLaunchKernel_ptsz : (void *)&cuLaunchKernel;
-  if (strcmp(name, "cuLaunchKernelEx") == 0)
-    return per_thread ? (void *)&cuLaunchKernelEx_ptsz
-                      : (void *)&cuLaunchKernelEx;
-  if (strcmp(name, "cuMemAllocAsync") == 0)
-    return per_thread ? (void *)&cuMemAllocAsync_ptsz
-                      : (void *)&cuMemAllocAsync;
-  if (strcmp(name, "cuMemAllocFromPoolAsync") == 0)
-    return per_thread ? (void *)&cuMemAllocFromPoolAsync_ptsz
-                      : (void *)&cuMemAllocFromPoolAsync;
-  if (strcmp(name, "cuMemFreeAsync") == 0)
-    return per_thread ? (void *)&cuMemFreeAsync_ptsz : (void *)&cuMemFreeAsync;
-  if (strcmp(name, "cuMemMapArrayAsync") == 0)
-    return per_thread ? (void *)&cuMemMapArrayAsync_ptsz
-                      : (void *)&cuMemMapArrayAsync;
-#if CUDA_VERSION >= 12020
-  if (strcmp(name, "cuMemPrefetchAsync_v2") == 0)
-    return per_thread ? (void *)&cuMemPrefetchAsync_v2_ptsz
-                      : (void *)&cuMemPrefetchAsync_v2;
-#endif
-  if (strcmp(name, "cuMemcpy") == 0)
-    return per_thread ? (void *)&cuMemcpy_ptds : (void *)&cuMemcpy;
-  if (strcmp(name, "cuMemcpy2DAsync_v2") == 0 ||
-      strcmp(name, "cuMemcpy2DAsync") == 0)
-    return per_thread ? (void *)&cuMemcpy2DAsync_v2_ptsz
-                      : (void *)&cuMemcpy2DAsync_v2;
-  if (strcmp(name, "cuMemcpy2DUnaligned_v2") == 0 ||
-      strcmp(name, "cuMemcpy2DUnaligned") == 0)
-    return per_thread ? (void *)&cuMemcpy2DUnaligned_v2_ptds
-                      : (void *)&cuMemcpy2DUnaligned_v2;
-  if (strcmp(name, "cuMemcpy2D_v2") == 0 || strcmp(name, "cuMemcpy2D") == 0)
-    return per_thread ? (void *)&cuMemcpy2D_v2_ptds : (void *)&cuMemcpy2D_v2;
-  if (strcmp(name, "cuMemcpy3DAsync_v2") == 0 ||
-      strcmp(name, "cuMemcpy3DAsync") == 0)
-    return per_thread ? (void *)&cuMemcpy3DAsync_v2_ptsz
-                      : (void *)&cuMemcpy3DAsync_v2;
-  if (strcmp(name, "cuMemcpy3DPeer") == 0)
-    return per_thread ? (void *)&cuMemcpy3DPeer_ptds : (void *)&cuMemcpy3DPeer;
-  if (strcmp(name, "cuMemcpy3DPeerAsync") == 0)
-    return per_thread ? (void *)&cuMemcpy3DPeerAsync_ptsz
-                      : (void *)&cuMemcpy3DPeerAsync;
-  if (strcmp(name, "cuMemcpy3D_v2") == 0 || strcmp(name, "cuMemcpy3D") == 0)
-    return per_thread ? (void *)&cuMemcpy3D_v2_ptds : (void *)&cuMemcpy3D_v2;
-  if (strcmp(name, "cuMemcpyAtoA_v2") == 0 || strcmp(name, "cuMemcpyAtoA") == 0)
-    return per_thread ? (void *)&cuMemcpyAtoA_v2_ptds
-                      : (void *)&cuMemcpyAtoA_v2;
-  if (strcmp(name, "cuMemcpyAtoD_v2") == 0 || strcmp(name, "cuMemcpyAtoD") == 0)
-    return per_thread ? (void *)&cuMemcpyAtoD_v2_ptds
-                      : (void *)&cuMemcpyAtoD_v2;
-  if (strcmp(name, "cuMemcpyAtoHAsync_v2") == 0 ||
-      strcmp(name, "cuMemcpyAtoHAsync") == 0)
-    return per_thread ? (void *)&cuMemcpyAtoHAsync_v2_ptsz
-                      : (void *)&cuMemcpyAtoHAsync_v2;
-  if (strcmp(name, "cuMemcpyAtoH_v2") == 0 || strcmp(name, "cuMemcpyAtoH") == 0)
-    return per_thread ? (void *)&cuMemcpyAtoH_v2_ptds
-                      : (void *)&cuMemcpyAtoH_v2;
-  if (strcmp(name, "cuMemcpyDtoA_v2") == 0 || strcmp(name, "cuMemcpyDtoA") == 0)
-    return per_thread ? (void *)&cuMemcpyDtoA_v2_ptds
-                      : (void *)&cuMemcpyDtoA_v2;
-  if (strcmp(name, "cuMemcpyDtoDAsync_v2") == 0 ||
-      strcmp(name, "cuMemcpyDtoDAsync") == 0)
-    return per_thread ? (void *)&cuMemcpyDtoDAsync_v2_ptsz
-                      : (void *)&cuMemcpyDtoDAsync_v2;
-  if (strcmp(name, "cuMemcpyDtoD_v2") == 0 || strcmp(name, "cuMemcpyDtoD") == 0)
-    return per_thread ? (void *)&cuMemcpyDtoD_v2_ptds
-                      : (void *)&cuMemcpyDtoD_v2;
-  if (strcmp(name, "cuMemcpyDtoHAsync_v2") == 0 ||
-      strcmp(name, "cuMemcpyDtoHAsync") == 0)
-    return per_thread ? (void *)&cuMemcpyDtoHAsync_v2_ptsz
-                      : (void *)&cuMemcpyDtoHAsync_v2;
-  if (strcmp(name, "cuMemcpyDtoH_v2") == 0 || strcmp(name, "cuMemcpyDtoH") == 0)
-    return per_thread ? (void *)&cuMemcpyDtoH_v2_ptds
-                      : (void *)&cuMemcpyDtoH_v2;
-  if (strcmp(name, "cuMemcpyHtoDAsync_v2") == 0 ||
-      strcmp(name, "cuMemcpyHtoDAsync") == 0)
-    return per_thread ? (void *)&cuMemcpyHtoDAsync_v2_ptsz
-                      : (void *)&cuMemcpyHtoDAsync_v2;
-  if (strcmp(name, "cuMemcpyHtoD_v2") == 0 || strcmp(name, "cuMemcpyHtoD") == 0)
-    return per_thread ? (void *)&cuMemcpyHtoD_v2_ptds
-                      : (void *)&cuMemcpyHtoD_v2;
-  if (strcmp(name, "cuMemcpyPeer") == 0)
-    return per_thread ? (void *)&cuMemcpyPeer_ptds : (void *)&cuMemcpyPeer;
-  if (strcmp(name, "cuMemcpyPeerAsync") == 0)
-    return per_thread ? (void *)&cuMemcpyPeerAsync_ptsz
-                      : (void *)&cuMemcpyPeerAsync;
-  if (strcmp(name, "cuMemsetD16Async") == 0)
-    return per_thread ? (void *)&cuMemsetD16Async_ptsz
-                      : (void *)&cuMemsetD16Async;
-  if (strcmp(name, "cuMemsetD16_v2") == 0 || strcmp(name, "cuMemsetD16") == 0)
-    return per_thread ? (void *)&cuMemsetD16_v2_ptds : (void *)&cuMemsetD16_v2;
-  if (strcmp(name, "cuMemsetD2D16Async") == 0)
-    return per_thread ? (void *)&cuMemsetD2D16Async_ptsz
-                      : (void *)&cuMemsetD2D16Async;
-  if (strcmp(name, "cuMemsetD2D16_v2") == 0 ||
-      strcmp(name, "cuMemsetD2D16") == 0)
-    return per_thread ? (void *)&cuMemsetD2D16_v2_ptds
-                      : (void *)&cuMemsetD2D16_v2;
-  if (strcmp(name, "cuMemsetD2D32Async") == 0)
-    return per_thread ? (void *)&cuMemsetD2D32Async_ptsz
-                      : (void *)&cuMemsetD2D32Async;
-  if (strcmp(name, "cuMemsetD2D32_v2") == 0 ||
-      strcmp(name, "cuMemsetD2D32") == 0)
-    return per_thread ? (void *)&cuMemsetD2D32_v2_ptds
-                      : (void *)&cuMemsetD2D32_v2;
-  if (strcmp(name, "cuMemsetD2D8Async") == 0)
-    return per_thread ? (void *)&cuMemsetD2D8Async_ptsz
-                      : (void *)&cuMemsetD2D8Async;
-  if (strcmp(name, "cuMemsetD2D8_v2") == 0 || strcmp(name, "cuMemsetD2D8") == 0)
-    return per_thread ? (void *)&cuMemsetD2D8_v2_ptds
-                      : (void *)&cuMemsetD2D8_v2;
-  if (strcmp(name, "cuMemsetD32Async") == 0)
-    return per_thread ? (void *)&cuMemsetD32Async_ptsz
-                      : (void *)&cuMemsetD32Async;
-  if (strcmp(name, "cuMemsetD32_v2") == 0 || strcmp(name, "cuMemsetD32") == 0)
-    return per_thread ? (void *)&cuMemsetD32_v2_ptds : (void *)&cuMemsetD32_v2;
-  if (strcmp(name, "cuMemsetD8Async") == 0)
-    return per_thread ? (void *)&cuMemsetD8Async_ptsz
-                      : (void *)&cuMemsetD8Async;
-  if (strcmp(name, "cuMemsetD8_v2") == 0 || strcmp(name, "cuMemsetD8") == 0)
-    return per_thread ? (void *)&cuMemsetD8_v2_ptds : (void *)&cuMemsetD8_v2;
-  if (strcmp(name, "cuSignalExternalSemaphoresAsync") == 0)
-    return per_thread ? (void *)&cuSignalExternalSemaphoresAsync_ptsz
-                      : (void *)&cuSignalExternalSemaphoresAsync;
-  if (strcmp(name, "cuStreamAddCallback") == 0)
-    return per_thread ? (void *)&cuStreamAddCallback_ptsz
-                      : (void *)&cuStreamAddCallback;
-  if (strcmp(name, "cuStreamAttachMemAsync") == 0)
-    return per_thread ? (void *)&cuStreamAttachMemAsync_ptsz
-                      : (void *)&cuStreamAttachMemAsync;
-  if (strcmp(name, "cuStreamBatchMemOp_v2") == 0 ||
-      strcmp(name, "cuStreamBatchMemOp") == 0)
-    return per_thread ? (void *)&cuStreamBatchMemOp_v2_ptsz
-                      : (void *)&cuStreamBatchMemOp_v2;
-  if (strcmp(name, "cuStreamBeginCaptureToGraph") == 0)
-    return per_thread ? (void *)&cuStreamBeginCaptureToGraph_ptsz
-                      : (void *)&cuStreamBeginCaptureToGraph;
-  if (strcmp(name, "cuStreamBeginCapture_v2") == 0)
-    return per_thread ? (void *)&cuStreamBeginCapture_v2_ptsz
-                      : (void *)&cuStreamBeginCapture_v2;
-  if (strcmp(name, "cuStreamCopyAttributes") == 0)
-    return per_thread ? (void *)&cuStreamCopyAttributes_ptsz
-                      : (void *)&cuStreamCopyAttributes;
-  if (strcmp(name, "cuStreamEndCapture") == 0)
-    return per_thread ? (void *)&cuStreamEndCapture_ptsz
-                      : (void *)&cuStreamEndCapture;
-  if (strcmp(name, "cuStreamGetAttribute") == 0)
-    return per_thread ? (void *)&cuStreamGetAttribute_ptsz
-                      : (void *)&cuStreamGetAttribute;
-  if (strcmp(name, "cuStreamGetCaptureInfo_v2") == 0)
-    return per_thread ? (void *)&cuStreamGetCaptureInfo_v2_ptsz
-                      : (void *)&cuStreamGetCaptureInfo_v2;
-  if (strcmp(name, "cuStreamGetCaptureInfo_v3") == 0)
-    return per_thread ? (void *)&cuStreamGetCaptureInfo_v3_ptsz
-                      : (void *)&cuStreamGetCaptureInfo_v3;
-  if (strcmp(name, "cuStreamGetCtx") == 0)
-    return per_thread ? (void *)&cuStreamGetCtx_ptsz : (void *)&cuStreamGetCtx;
+    {(void *)cuMemcpy2DAsync_v2, (void *)cuMemcpy2DAsync_v2_ptsz},
+    {(void *)cuMemcpy3DAsync_v2, (void *)cuMemcpy3DAsync_v2_ptsz},
+    {(void *)cuMemcpy3DPeerAsync, (void *)cuMemcpy3DPeerAsync_ptsz},
+    {(void *)cuMemcpyAsync, (void *)cuMemcpyAsync_ptsz},
+    {(void *)cuMemcpyAtoHAsync_v2, (void *)cuMemcpyAtoHAsync_v2_ptsz},
+    {(void *)cuMemcpyDtoDAsync_v2, (void *)cuMemcpyDtoDAsync_v2_ptsz},
+    {(void *)cuMemcpyDtoHAsync_v2, (void *)cuMemcpyDtoHAsync_v2_ptsz},
+    {(void *)cuMemcpyHtoDAsync_v2, (void *)cuMemcpyHtoDAsync_v2_ptsz},
+    {(void *)cuMemcpyPeerAsync, (void *)cuMemcpyPeerAsync_ptsz},
+    {(void *)cuMemsetD16Async, (void *)cuMemsetD16Async_ptsz},
+    {(void *)cuMemsetD2D16Async, (void *)cuMemsetD2D16Async_ptsz},
+    {(void *)cuMemsetD2D32Async, (void *)cuMemsetD2D32Async_ptsz},
+    {(void *)cuMemsetD2D8Async, (void *)cuMemsetD2D8Async_ptsz},
+    {(void *)cuMemsetD32Async, (void *)cuMemsetD32Async_ptsz},
+    {(void *)cuMemsetD8Async, (void *)cuMemsetD8Async_ptsz},
+    {(void *)cuSignalExternalSemaphoresAsync,
+     (void *)cuSignalExternalSemaphoresAsync_ptsz},
+    {(void *)cuStreamAttachMemAsync, (void *)cuStreamAttachMemAsync_ptsz},
+    {(void *)cuStreamBatchMemOp_v2, (void *)cuStreamBatchMemOp_v2_ptsz},
+    {(void *)cuStreamBeginCaptureToGraph,
+     (void *)cuStreamBeginCaptureToGraph_ptsz},
+    {(void *)cuStreamBeginCapture_v2, (void *)cuStreamBeginCapture_v2_ptsz},
+    {(void *)cuStreamCopyAttributes, (void *)cuStreamCopyAttributes_ptsz},
+    {(void *)cuStreamEndCapture, (void *)cuStreamEndCapture_ptsz},
+    {(void *)cuStreamGetAttribute, (void *)cuStreamGetAttribute_ptsz},
+    {(void *)cuStreamGetCaptureInfo_v3, (void *)cuStreamGetCaptureInfo_v3_ptsz},
+    {(void *)cuStreamGetCtx, (void *)cuStreamGetCtx_ptsz},
 #if CUDA_VERSION >= 13010
-  if (strcmp(name, "cuStreamGetDevResource") == 0)
-    return per_thread ? (void *)&cuStreamGetDevResource_ptsz
-                      : (void *)&cuStreamGetDevResource;
+    {(void *)cuStreamGetDevResource, (void *)cuStreamGetDevResource_ptsz},
 #endif
-  if (strcmp(name, "cuStreamGetDevice") == 0)
-    return per_thread ? (void *)&cuStreamGetDevice_ptsz
-                      : (void *)&cuStreamGetDevice;
-  if (strcmp(name, "cuStreamGetFlags") == 0)
-    return per_thread ? (void *)&cuStreamGetFlags_ptsz
-                      : (void *)&cuStreamGetFlags;
-  if (strcmp(name, "cuStreamGetId") == 0)
-    return per_thread ? (void *)&cuStreamGetId_ptsz : (void *)&cuStreamGetId;
-  if (strcmp(name, "cuStreamGetPriority") == 0)
-    return per_thread ? (void *)&cuStreamGetPriority_ptsz
-                      : (void *)&cuStreamGetPriority;
-  if (strcmp(name, "cuStreamIsCapturing") == 0)
-    return per_thread ? (void *)&cuStreamIsCapturing_ptsz
-                      : (void *)&cuStreamIsCapturing;
-  if (strcmp(name, "cuStreamQuery") == 0)
-    return per_thread ? (void *)&cuStreamQuery_ptsz : (void *)&cuStreamQuery;
-  if (strcmp(name, "cuStreamSetAttribute") == 0)
-    return per_thread ? (void *)&cuStreamSetAttribute_ptsz
-                      : (void *)&cuStreamSetAttribute;
-  if (strcmp(name, "cuStreamSynchronize") == 0)
-    return per_thread ? (void *)&cuStreamSynchronize_ptsz
-                      : (void *)&cuStreamSynchronize;
-  if (strcmp(name, "cuStreamUpdateCaptureDependencies_v2") == 0)
-    return per_thread ? (void *)&cuStreamUpdateCaptureDependencies_v2_ptsz
-                      : (void *)&cuStreamUpdateCaptureDependencies_v2;
-  if (strcmp(name, "cuStreamWaitEvent") == 0)
-    return per_thread ? (void *)&cuStreamWaitEvent_ptsz
-                      : (void *)&cuStreamWaitEvent;
-  if (strcmp(name, "cuStreamWaitValue32_v2") == 0 ||
-      strcmp(name, "cuStreamWaitValue32") == 0)
-    return per_thread ? (void *)&cuStreamWaitValue32_v2_ptsz
-                      : (void *)&cuStreamWaitValue32_v2;
-  if (strcmp(name, "cuStreamWaitValue64_v2") == 0 ||
-      strcmp(name, "cuStreamWaitValue64") == 0)
-    return per_thread ? (void *)&cuStreamWaitValue64_v2_ptsz
-                      : (void *)&cuStreamWaitValue64_v2;
-  if (strcmp(name, "cuStreamWriteValue32_v2") == 0 ||
-      strcmp(name, "cuStreamWriteValue32") == 0)
-    return per_thread ? (void *)&cuStreamWriteValue32_v2_ptsz
-                      : (void *)&cuStreamWriteValue32_v2;
-  if (strcmp(name, "cuStreamWriteValue64_v2") == 0 ||
-      strcmp(name, "cuStreamWriteValue64") == 0)
-    return per_thread ? (void *)&cuStreamWriteValue64_v2_ptsz
-                      : (void *)&cuStreamWriteValue64_v2;
-  if (strcmp(name, "cuWaitExternalSemaphoresAsync") == 0)
-    return per_thread ? (void *)&cuWaitExternalSemaphoresAsync_ptsz
-                      : (void *)&cuWaitExternalSemaphoresAsync;
-  return nullptr;
+    {(void *)cuStreamGetDevice, (void *)cuStreamGetDevice_ptsz},
+    {(void *)cuStreamGetFlags, (void *)cuStreamGetFlags_ptsz},
+    {(void *)cuStreamGetId, (void *)cuStreamGetId_ptsz},
+    {(void *)cuStreamGetPriority, (void *)cuStreamGetPriority_ptsz},
+    {(void *)cuStreamIsCapturing, (void *)cuStreamIsCapturing_ptsz},
+    {(void *)cuStreamQuery, (void *)cuStreamQuery_ptsz},
+    {(void *)cuStreamSetAttribute, (void *)cuStreamSetAttribute_ptsz},
+    {(void *)cuStreamSynchronize, (void *)cuStreamSynchronize_ptsz},
+    {(void *)cuStreamUpdateCaptureDependencies_v2,
+     (void *)cuStreamUpdateCaptureDependencies_v2_ptsz},
+    {(void *)cuStreamWaitEvent, (void *)cuStreamWaitEvent_ptsz},
+    {(void *)cuStreamWaitValue32_v2, (void *)cuStreamWaitValue32_v2_ptsz},
+    {(void *)cuStreamWaitValue64_v2, (void *)cuStreamWaitValue64_v2_ptsz},
+    {(void *)cuStreamWriteValue32_v2, (void *)cuStreamWriteValue32_v2_ptsz},
+    {(void *)cuStreamWriteValue64_v2, (void *)cuStreamWriteValue64_v2_ptsz},
+    {(void *)cuWaitExternalSemaphoresAsync,
+     (void *)cuWaitExternalSemaphoresAsync_ptsz},
+};
+
+void *get_per_thread_function(void *function) {
+  auto it = perThreadFunctionMap.find(function);
+  return it == perThreadFunctionMap.end() ? nullptr : it->second;
 }
+
 std::unordered_map<std::string, void *> functionMap = {
+    {"cuMemcpy_ptds", (void *)cuMemcpy_ptds},
+    {"cuMemcpy2DUnaligned_v2_ptds", (void *)cuMemcpy2DUnaligned_v2_ptds},
+    {"cuMemcpy2D_v2_ptds", (void *)cuMemcpy2D_v2_ptds},
+    {"cuMemcpy3DPeer_ptds", (void *)cuMemcpy3DPeer_ptds},
+    {"cuMemcpy3D_v2_ptds", (void *)cuMemcpy3D_v2_ptds},
+    {"cuMemcpyAtoA_v2_ptds", (void *)cuMemcpyAtoA_v2_ptds},
+    {"cuMemcpyAtoD_v2_ptds", (void *)cuMemcpyAtoD_v2_ptds},
+    {"cuMemcpyAtoH_v2_ptds", (void *)cuMemcpyAtoH_v2_ptds},
+    {"cuMemcpyDtoA_v2_ptds", (void *)cuMemcpyDtoA_v2_ptds},
+    {"cuMemcpyDtoD_v2_ptds", (void *)cuMemcpyDtoD_v2_ptds},
+    {"cuMemcpyDtoH_v2_ptds", (void *)cuMemcpyDtoH_v2_ptds},
+    {"cuMemcpyHtoD_v2_ptds", (void *)cuMemcpyHtoD_v2_ptds},
+    {"cuMemcpyPeer_ptds", (void *)cuMemcpyPeer_ptds},
+    {"cuMemsetD16_v2_ptds", (void *)cuMemsetD16_v2_ptds},
+    {"cuMemsetD2D16_v2_ptds", (void *)cuMemsetD2D16_v2_ptds},
+    {"cuMemsetD2D32_v2_ptds", (void *)cuMemsetD2D32_v2_ptds},
+    {"cuMemsetD2D8_v2_ptds", (void *)cuMemsetD2D8_v2_ptds},
+    {"cuMemsetD32_v2_ptds", (void *)cuMemsetD32_v2_ptds},
+    {"cuMemsetD8_v2_ptds", (void *)cuMemsetD8_v2_ptds},
     {"cuEventRecord_ptsz", (void *)cuEventRecord_ptsz},
     {"cuEventRecordWithFlags_ptsz", (void *)cuEventRecordWithFlags_ptsz},
     {"cuGraphInstantiateWithParams_ptsz",
@@ -8336,57 +8074,34 @@ std::unordered_map<std::string, void *> functionMap = {
     {"cuMemAllocFromPoolAsync_ptsz", (void *)cuMemAllocFromPoolAsync_ptsz},
     {"cuMemFreeAsync_ptsz", (void *)cuMemFreeAsync_ptsz},
     {"cuMemMapArrayAsync_ptsz", (void *)cuMemMapArrayAsync_ptsz},
-    {"cuMemPrefetchAsync_ptsz", (void *)cuMemPrefetchAsync_ptsz},
 #if CUDA_VERSION >= 12020
     {"cuMemPrefetchAsync_v2_ptsz", (void *)cuMemPrefetchAsync_v2_ptsz},
 #endif
-    {"cuMemcpy_ptds", (void *)cuMemcpy_ptds},
     {"cuMemcpy2DAsync_v2_ptsz", (void *)cuMemcpy2DAsync_v2_ptsz},
-    {"cuMemcpy2DUnaligned_v2_ptds", (void *)cuMemcpy2DUnaligned_v2_ptds},
-    {"cuMemcpy2D_v2_ptds", (void *)cuMemcpy2D_v2_ptds},
     {"cuMemcpy3DAsync_v2_ptsz", (void *)cuMemcpy3DAsync_v2_ptsz},
-    {"cuMemcpy3DPeer_ptds", (void *)cuMemcpy3DPeer_ptds},
     {"cuMemcpy3DPeerAsync_ptsz", (void *)cuMemcpy3DPeerAsync_ptsz},
-    {"cuMemcpy3D_v2_ptds", (void *)cuMemcpy3D_v2_ptds},
-    {"cuMemcpyAtoA_v2_ptds", (void *)cuMemcpyAtoA_v2_ptds},
-    {"cuMemcpyAtoD_v2_ptds", (void *)cuMemcpyAtoD_v2_ptds},
+    {"cuMemcpyAsync_ptsz", (void *)cuMemcpyAsync_ptsz},
     {"cuMemcpyAtoHAsync_v2_ptsz", (void *)cuMemcpyAtoHAsync_v2_ptsz},
-    {"cuMemcpyAtoH_v2_ptds", (void *)cuMemcpyAtoH_v2_ptds},
-    {"cuMemcpyDtoA_v2_ptds", (void *)cuMemcpyDtoA_v2_ptds},
     {"cuMemcpyDtoDAsync_v2_ptsz", (void *)cuMemcpyDtoDAsync_v2_ptsz},
-    {"cuMemcpyDtoD_v2_ptds", (void *)cuMemcpyDtoD_v2_ptds},
     {"cuMemcpyDtoHAsync_v2_ptsz", (void *)cuMemcpyDtoHAsync_v2_ptsz},
-    {"cuMemcpyDtoH_v2_ptds", (void *)cuMemcpyDtoH_v2_ptds},
     {"cuMemcpyHtoDAsync_v2_ptsz", (void *)cuMemcpyHtoDAsync_v2_ptsz},
-    {"cuMemcpyHtoD_v2_ptds", (void *)cuMemcpyHtoD_v2_ptds},
-    {"cuMemcpyPeer_ptds", (void *)cuMemcpyPeer_ptds},
     {"cuMemcpyPeerAsync_ptsz", (void *)cuMemcpyPeerAsync_ptsz},
     {"cuMemsetD16Async_ptsz", (void *)cuMemsetD16Async_ptsz},
-    {"cuMemsetD16_v2_ptds", (void *)cuMemsetD16_v2_ptds},
     {"cuMemsetD2D16Async_ptsz", (void *)cuMemsetD2D16Async_ptsz},
-    {"cuMemsetD2D16_v2_ptds", (void *)cuMemsetD2D16_v2_ptds},
     {"cuMemsetD2D32Async_ptsz", (void *)cuMemsetD2D32Async_ptsz},
-    {"cuMemsetD2D32_v2_ptds", (void *)cuMemsetD2D32_v2_ptds},
     {"cuMemsetD2D8Async_ptsz", (void *)cuMemsetD2D8Async_ptsz},
-    {"cuMemsetD2D8_v2_ptds", (void *)cuMemsetD2D8_v2_ptds},
     {"cuMemsetD32Async_ptsz", (void *)cuMemsetD32Async_ptsz},
-    {"cuMemsetD32_v2_ptds", (void *)cuMemsetD32_v2_ptds},
     {"cuMemsetD8Async_ptsz", (void *)cuMemsetD8Async_ptsz},
-    {"cuMemsetD8_v2_ptds", (void *)cuMemsetD8_v2_ptds},
     {"cuSignalExternalSemaphoresAsync_ptsz",
      (void *)cuSignalExternalSemaphoresAsync_ptsz},
-    {"cuStreamAddCallback_ptsz", (void *)cuStreamAddCallback_ptsz},
     {"cuStreamAttachMemAsync_ptsz", (void *)cuStreamAttachMemAsync_ptsz},
     {"cuStreamBatchMemOp_v2_ptsz", (void *)cuStreamBatchMemOp_v2_ptsz},
-    {"cuStreamBeginCapture_ptsz", (void *)cuStreamBeginCapture_ptsz},
     {"cuStreamBeginCaptureToGraph_ptsz",
      (void *)cuStreamBeginCaptureToGraph_ptsz},
     {"cuStreamBeginCapture_v2_ptsz", (void *)cuStreamBeginCapture_v2_ptsz},
     {"cuStreamCopyAttributes_ptsz", (void *)cuStreamCopyAttributes_ptsz},
     {"cuStreamEndCapture_ptsz", (void *)cuStreamEndCapture_ptsz},
     {"cuStreamGetAttribute_ptsz", (void *)cuStreamGetAttribute_ptsz},
-    {"cuStreamGetCaptureInfo_ptsz", (void *)cuStreamGetCaptureInfo_ptsz},
-    {"cuStreamGetCaptureInfo_v2_ptsz", (void *)cuStreamGetCaptureInfo_v2_ptsz},
     {"cuStreamGetCaptureInfo_v3_ptsz", (void *)cuStreamGetCaptureInfo_v3_ptsz},
     {"cuStreamGetCtx_ptsz", (void *)cuStreamGetCtx_ptsz},
 #if CUDA_VERSION >= 13010
@@ -8400,8 +8115,6 @@ std::unordered_map<std::string, void *> functionMap = {
     {"cuStreamQuery_ptsz", (void *)cuStreamQuery_ptsz},
     {"cuStreamSetAttribute_ptsz", (void *)cuStreamSetAttribute_ptsz},
     {"cuStreamSynchronize_ptsz", (void *)cuStreamSynchronize_ptsz},
-    {"cuStreamUpdateCaptureDependencies_ptsz",
-     (void *)cuStreamUpdateCaptureDependencies_ptsz},
     {"cuStreamUpdateCaptureDependencies_v2_ptsz",
      (void *)cuStreamUpdateCaptureDependencies_v2_ptsz},
     {"cuStreamWaitEvent_ptsz", (void *)cuStreamWaitEvent_ptsz},
@@ -8933,6 +8646,8 @@ std::unordered_map<std::string, void *> functionMap = {
     {"cuMemcpyDtoD", (void *)cuMemcpyDtoD_v2},
     {"cuMemcpyDtoDAsync", (void *)cuMemcpyDtoDAsync_v2},
     {"cuMemsetD8", (void *)cuMemsetD8_v2},
+    {"cuMemsetD16", (void *)cuMemsetD16_v2},
+    {"cuMemsetD32", (void *)cuMemsetD32_v2},
     {"cuMemsetD2D8", (void *)cuMemsetD2D8_v2},
     {"cuMemsetD2D16", (void *)cuMemsetD2D16_v2},
     {"cuMemsetD2D32", (void *)cuMemsetD2D32_v2},

@@ -660,16 +660,14 @@ static void *lupine_alloc_process_host_buffer(size_t bytes) {
 
 std::vector<lupine_pending_dtoh_item>
 lupine_detach_pending_dtoh_copies(conn_t *conn, CUstream stream,
-                                  bool all_streams, CUcontext context,
-                                  const lupine_stream_key *identity) {
+                                  bool all_streams, CUcontext context) {
   std::vector<lupine_pending_dtoh_item> copies;
-  const auto stream_key =
-      identity ? *identity : lupine_server_stream_identity(stream);
-  auto *inherited = lupine_find_stream_resources(stream_key);
+  stream = lupine_stream_key(stream);
+  auto *inherited = lupine_find_stream_resources(stream);
   lupine_pending_dtoh_copies().erase_fn(
       conn, [&](lupine_pending_dtoh_streams &streams) {
         for (auto it = streams.begin(); it != streams.end();) {
-          if (!all_streams && it->first != stream_key && inherited == nullptr) {
+          if (!all_streams && it->first != stream && inherited == nullptr) {
             ++it;
             continue;
           }
@@ -677,7 +675,7 @@ lupine_detach_pending_dtoh_copies(conn_t *conn, CUstream stream,
           items.erase(std::remove_if(
                           items.begin(), items.end(),
                           [&](const auto &item) {
-                            if (!all_streams && it->first != stream_key &&
+                            if (!all_streams && it->first != stream &&
                                 item.graph_resources != inherited) {
                               return false;
                             }
@@ -723,28 +721,31 @@ lupine_remove_event_dtoh_markers(lupine_pending_dtoh_streams *streams,
 void lupine_note_event_record(conn_t *conn, CUevent event, CUstream stream) {
   CUcontext context = nullptr;
   (void)cuStreamGetCtx(stream, &context);
+  stream = lupine_stream_key(stream);
   lupine_pending_dtoh_item marker{event};
   marker.context = context;
   lupine_pending_dtoh_streams initial;
-  const auto stream_key = lupine_server_stream_identity(stream);
-  initial[stream_key].push_back(marker);
+  initial[stream].push_back(marker);
   lupine_pending_dtoh_copies().upsert(
       conn,
-      [event, stream, stream_key, marker](lupine_pending_dtoh_streams &streams,
-                                          libcuckoo::UpsertContext) {
+      [event, stream, marker](lupine_pending_dtoh_streams &streams,
+                              libcuckoo::UpsertContext) {
         lupine_remove_event_dtoh_markers(&streams, event);
-        if (stream != nullptr && stream != CU_STREAM_LEGACY) {
-          streams[stream_key].push_back(marker);
+        if (stream != nullptr) {
+          streams[stream].push_back(marker);
           return;
         }
 
         // The legacy default stream orders this event after every blocking
         // stream's prior work. The null queue is its sentinel.
-        streams.try_emplace(stream_key);
+        streams.try_emplace(nullptr);
         for (auto &entry : streams) {
-          if (!lupine_is_default_stream(entry.first.stream)) {
+          if (entry.first != nullptr) {
+            if ((reinterpret_cast<uintptr_t>(entry.first) & 3) == 3) {
+              continue;
+            }
             unsigned int flags = 0;
-            if (cuStreamGetFlags(entry.first.stream, &flags) != CUDA_SUCCESS ||
+            if (cuStreamGetFlags(entry.first, &flags) != CUDA_SUCCESS ||
                 (flags & CU_STREAM_NON_BLOCKING) != 0) {
               continue;
             }
@@ -2543,8 +2544,7 @@ void CUDA_CB lupine_graph_host_callback(void *userData) {
   conn_t *conn = callback->conn;
   auto pending =
       callback->stream.has_value()
-          ? lupine_detach_pending_dtoh_copies(conn, *callback->stream, false,
-                                              nullptr, &callback->stream_key)
+          ? lupine_detach_pending_dtoh_copies(conn, *callback->stream, false)
           : lupine_pending_dtoh_items{};
   int transfer_count = static_cast<int>(copies.size() + pending.size());
   bool failed =
@@ -2586,8 +2586,8 @@ void CUDA_CB lupine_stream_callback(CUstream stream, CUresult status,
   void *fn = reinterpret_cast<void *>(callback->callback);
   void *client_user_data = callback->userData;
   void *response = nullptr;
-  auto pending = lupine_detach_pending_dtoh_copies(conn, stream, false, nullptr,
-                                                   &callback->stream_key);
+  auto pending =
+      lupine_detach_pending_dtoh_copies(conn, callback->stream_key, false);
   if (rpc_write_start_request(conn, LUPINE_SIDE_EFFECT_STREAM_CALLBACK) >= 0 &&
       rpc_copy_alloc(conn, sizeof(uint32_t)) >= 0 &&
       lupine_write_pending_dtoh_copies(conn, pending, true) >= 0 &&
@@ -3244,8 +3244,7 @@ int handle_cuLaunchHostFunc(conn_t *conn) {
       fn,
       userData,
       resources,
-      stream,
-      lupine_server_stream_identity(stream),
+      lupine_stream_key(stream),
       capture_status == CU_STREAM_CAPTURE_STATUS_NONE};
   result = cuLaunchHostFunc(stream, lupine_graph_host_callback, callback);
   if (result != CUDA_SUCCESS) {
@@ -3277,8 +3276,8 @@ int handle_cuStreamAddCallback(conn_t *conn) {
     return -1;
   }
 
-  auto *data = new lupine_stream_callback_data{
-      conn, callback, userData, lupine_server_stream_identity(stream)};
+  auto *data = new lupine_stream_callback_data{conn, callback, userData,
+                                               lupine_stream_key(stream)};
   result = cuStreamAddCallback(stream, lupine_stream_callback, data, flags);
   if (result != CUDA_SUCCESS) {
     delete data;

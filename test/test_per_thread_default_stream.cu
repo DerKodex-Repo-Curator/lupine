@@ -261,8 +261,8 @@ ret;
   REQUIRE(callbacks == 2);
 
   // Captures overlap in two host threads sharing one CUDA context. Their
-  // resource maps, capture caches, pinned copy staging and RPC lanes must be
-  // independent even though both streams have the same sentinel handle.
+  // resource maps, capture caches and RPC lanes must be independent even
+  // though both streams have the same sentinel handle.
   unsigned int *host = nullptr;
   CHECK(cuMemAllocHost(reinterpret_cast<void **>(&host), 4 * sizeof(*host)));
   host[0] = 101;
@@ -283,8 +283,9 @@ ret;
     CHECK(resolve<CaptureInfo>("cuStreamGetCaptureInfo", 10010)(
         nullptr, &thread_status, &capture_ids[index]));
     REQUIRE(thread_status == CU_STREAM_CAPTURE_STATUS_ACTIVE);
-    CHECK(resolve<HtoD>("cuMemcpyHtoDAsync", 7000)(devices[index], host + index,
-                                                   sizeof(*host), nullptr));
+    using SetAsync = CUresult (*)(CUdeviceptr, unsigned int, size_t, CUstream);
+    CHECK(resolve<SetAsync>("cuMemsetD32Async", 7000)(devices[index],
+                                                      host[index], 1, nullptr));
     CHECK(symbol<DtoH>("cuMemcpyDtoHAsync_v2_ptsz")(
         host + index + 2, devices[index], sizeof(*host), nullptr));
     barrier.wait();
@@ -305,8 +306,7 @@ ret;
   REQUIRE(stream_ids[0] != stream_ids[1]);
   REQUIRE(capture_ids[0] != capture_ids[1]);
 
-  // The capture's staging must outlive its originating thread, while each
-  // retired lane must release its cache once the graph is destroyed.
+  // The capture's staging must outlive its originating thread and lane.
   for (unsigned iteration = 0; iteration < 16; ++iteration) {
     CUgraph graph = nullptr;
     host[0] = 300 + iteration;

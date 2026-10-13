@@ -19,7 +19,6 @@ import subprocess
 import textwrap
 import zlib
 from client_templates import collect_client_call_templates
-from cuda_streams import StreamRegistry
 from emit import (
     Backend,
     format_call_args,
@@ -85,11 +84,12 @@ MANUAL_REMAPPINGS = [
     ("cuMemcpyDtoD", "cuMemcpyDtoD_v2"),
     ("cuMemcpyDtoDAsync", "cuMemcpyDtoDAsync_v2"),
     ("cuMemsetD8", "cuMemsetD8_v2"),
+    ("cuMemsetD16", "cuMemsetD16_v2"),
+    ("cuMemsetD32", "cuMemsetD32_v2"),
     ("cuMemsetD2D8", "cuMemsetD2D8_v2"),
     ("cuMemsetD2D16", "cuMemsetD2D16_v2"),
     ("cuMemsetD2D32", "cuMemsetD2D32_v2"),
     ("cuIpcOpenMemHandle", "cuIpcOpenMemHandle_v2"),
-    ("cuStreamBeginCapture", "cuStreamBeginCapture_v2"),
 ]
 
 # Versioned graph-query ABIs are also exported under their public, unversioned
@@ -1216,7 +1216,9 @@ def write_rpc_ids(
             write_rpc_define(f"LUPINE_RPC_{name}", name)
 
 
-def write_cuda_client(functions_with_annotations, legacy_abi_functions, streams):
+def write_cuda_client(
+    functions_with_annotations, legacy_abi_functions, defined, stream_variants
+):
     with open("gen_cuda_client.cpp", "w") as f:
         f.write(
             "#include <cuda.h>\n"
@@ -1235,7 +1237,6 @@ def write_cuda_client(functions_with_annotations, legacy_abi_functions, streams)
             '#include "gen_rpc_ids.h"\n\n'
             '#include "client_routing.h"\n'
             '#include "cuda_client_memcpy.h"\n'
-            '#include "gen_cuda_streams.h"\n'
             '#include "rpc.h"\n\n'
             "extern int rpc_size();\n"
             "extern conn_t *rpc_client_get_connection(unsigned int index);\n"
@@ -1554,9 +1555,50 @@ def write_cuda_client(functions_with_annotations, legacy_abi_functions, streams)
             else:
                 f.write(f"    return {call};\n")
             f.write("}\n\n")
-        streams.write_client_wrappers(f)
+        # A _ptsz variant reads stream zero as the per-thread stream. A _ptds
+        # copy runs as its async form on that stream when one exists.
+        explicit = {name for kind, name in stream_variants if kind == "PTSZ"}
+        per_thread = []
+        for kind, name in stream_variants:
+            if name not in defined:
+                continue
+            function, guard, declare = defined[name]
+            alias = f"{name}_{kind.lower()}"
+            params = ", ".join(format_function_params(function))
+            args = format_call_args(function)
+            body = ""
+            for i, p in enumerate(function.parameters):
+                if p.type.format() == "CUstream":
+                    args[i] = f"{p.name} ? {p.name} : CU_STREAM_PER_THREAD"
+                elif "CUlaunchConfig" in p.type.format():
+                    body = f"CUlaunchConfig per_thread = *{p.name};\nper_thread.hStream = per_thread.hStream ? per_thread.hStream : CU_STREAM_PER_THREAD;\n"
+                    args[i] = "&per_thread"
+            call = f"{name}({', '.join(args)})"
+            base = name.replace("_v2", "") + "Async"
+            async_name = base + "_v2" if base + "_v2" in explicit else base
+            if kind == "PTDS" and async_name in explicit and async_name in defined:
+                body = f"CUresult result = {async_name}({', '.join(args + ['CU_STREAM_PER_THREAD'])});\n"
+                call = "result != CUDA_SUCCESS ? result : cuStreamSynchronize(CU_STREAM_PER_THREAD)"
+            f.write(f"#if {guard}\n" if guard else "")
+            if declare:
+                f.write(f'extern "C" CUresult {name}({params});\n')
+            f.write(f'extern "C" CUresult {alias}({params}) {{\n{body}return {call};\n}}\n')
+            f.write("#endif\n" if guard else "")
+            per_thread.append((name, alias, guard))
+        f.write("static const std::unordered_map<void *, void *> perThreadFunctionMap = {\n")
+        for name, alias, guard in per_thread:
+            f.write(f"#if {guard}\n" if guard else "")
+            f.write(f"{{(void *){name}, (void *){alias}}},\n")
+            f.write("#endif\n" if guard else "")
+        f.write("};\n\n")
+        f.write("void *get_per_thread_function(void *function) {\n")
+        f.write("auto it = perThreadFunctionMap.find(function);\n")
+        f.write("return it == perThreadFunctionMap.end() ? nullptr : it->second;\n}\n\n")
         f.write("std::unordered_map<std::string, void *> functionMap = {\n")
-        streams.write_map_entries(f)
+        for name, alias, guard in per_thread:
+            f.write(f"#if {guard}\n" if guard else "")
+            f.write(f'{{"{alias}", (void *){alias}}},\n')
+            f.write("#endif\n" if guard else "")
         for function, _, _, metadata in functions_with_annotations:
             if metadata.guard is not None:
                 f.write(f"#if {metadata.guard}\n")
@@ -1606,7 +1648,6 @@ def write_cuda_server(
     legacy_abi_functions,
     server_bindings,
     annotation_only_server_functions,
-    streams,
 ):
     with open("gen_cuda_server.cpp", "w") as f:
         f.write(
@@ -1621,7 +1662,6 @@ def write_cuda_server(
             '#include <cstdio>\n\n'
             '#include "cuda_server_memcpy.h"\n'
             '#include "device_stdout.h"\n'
-            '#include "gen_cuda_streams_server.h"\n'
             '#include "rpc.h"\n\n'
         )
         annotation_only_functions = (
@@ -1643,8 +1683,6 @@ def write_cuda_server(
             ):
                 continue
             write_server_handler(f, CUDA, function, operations, metadata)
-
-        streams.write_server_wrappers(f)
 
 
 def write_registry(registry_entries, guarded_declarations, guarded_handlers):
@@ -1873,17 +1911,9 @@ def main():
         }
     )
 
-    streams = StreamRegistry(
-        cuda_header,
-        cuda_ast.namespace.functions,
-        cuda_annotations.namespace.functions,
-        {function.name.format() for function, _, _, _ in functions_with_annotations}
-        | set(server_bindings),
-    )
-    streams.write_headers()
     write_rpc_ids(
         functions_with_annotations,
-        annotated_names + [e[0] + "_ptds" for e in streams.implicit],
+        annotated_names,
         hip_functions_with_annotations,
         nccl_functions_with_annotations,
     )
@@ -1994,14 +2024,38 @@ def main():
                 if metadata.guard is not None:
                     f.write("#endif\n")
 
-    write_cuda_client(functions_with_annotations, legacy_abi_functions, streams)
+    # Handwritten client wrappers exist for every CUDA header version, which
+    # may not declare them.
+    client_sources = "".join(
+        open(f"../{name}").read() for name in ("cuda_client.cpp", "cuda_client_memcpy.cpp")
+    )
+    handwritten = set(re.findall(r'extern "C" CUresult\s+(cu\w+)\s*\(', client_sources))
+    sdk_functions = {f.name.format(): f for f in cuda_ast.namespace.functions}
+    defined = {
+        name: (sdk_functions[name], None, True)
+        for name in handwritten
+        if name in sdk_functions
+    }
+    defined.update(
+        (f.name.format(), (f, m.guard, False))
+        for f, _, _, m in functions_with_annotations
+    )
+    stream_variants = [
+        (kind, name)
+        for kind, name in sorted(
+            set(re.findall(r"__CUDA_API_(PTDS|PTSZ)\((cu\w+)\)", open(cuda_header).read()))
+        )
+        if f"{name}_{kind.lower()}" not in handwritten
+    ]
+    write_cuda_client(
+        functions_with_annotations, legacy_abi_functions, defined, stream_variants
+    )
 
     write_cuda_server(
         server_functions_with_annotations,
         legacy_abi_functions,
         server_bindings,
         annotation_only_server_functions,
-        streams,
     )
 
     generated_bindings = [
@@ -2041,8 +2095,6 @@ def main():
         and function.name.format() not in server_bindings
     )
     bindings = list(server_bindings.values()) + generated_bindings
-    streams.add_server_bindings(bindings, ServerBinding)
-    streams.rewrite_generated_calls()
 
     operations_by_id = {}
     for binding in bindings:
@@ -2090,8 +2142,6 @@ def main():
             "clang-format",
             "-i",
             "gen_cuda_client.cpp",
-            "gen_cuda_streams.h",
-            "gen_cuda_streams_server.h",
             "gen_nvml_client.inc",
             "gen_nvml_server.h",
             "gen_nvml_server.inc",

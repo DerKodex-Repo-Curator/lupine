@@ -27,7 +27,6 @@
 
 #include "cache.h"
 #include "client_routing.h"
-#include "codegen/gen_cuda_streams.h"
 #include "codegen/gen_rpc_ids.h"
 #include "cuda_client_memcpy.h"
 #include "events.h"
@@ -3703,12 +3702,10 @@ extern "C" int lupine_write_cross_route_device_source(conn_t *destination_conn,
   // calling cuMemcpyDtoH_v2 from a refill would try to open a second writer
   // and fail before reaching the source server. One streamed DtoH request lets
   // the callback consume source responses without nesting RPC writers.
-  CUstream source_stream = lupine_implicit_stream();
+  CUstream source_stream = CU_STREAM_LEGACY;
   if (bytes != 0 &&
       (lupine_prepare_rpc(source_cursor.conn) < 0 ||
-       rpc_write_start_request(
-           source_cursor.conn,
-           lupine_implicit_stream_rpc(RPC_cuMemcpyDtoH_v2)) < 0 ||
+       rpc_write_start_request(source_cursor.conn, RPC_cuMemcpyDtoH_v2) < 0 ||
        rpc_write(source_cursor.conn, &source, sizeof(source)) < 0 ||
        rpc_write(source_cursor.conn, &bytes, sizeof(bytes)) < 0 ||
        rpc_write(source_cursor.conn, &source_stream, sizeof(source_stream)) <
@@ -3861,8 +3858,8 @@ static CUresult lupine_copy_dtoh_pageable(conn_t *conn, void *dstHost,
   if (lupine_prepare_rpc(conn) < 0) {
     return CUDA_ERROR_DEVICE_UNAVAILABLE;
   }
-  // Bulk readers run on other server lanes, which have their own per-thread
-  // default streams.
+  // Bulk readers copy on their own server lanes, where CU_STREAM_PER_THREAD
+  // names a different stream.
   lupine_bulk_lanes *lanes =
       ByteCount >= LUPINE_BULK_COPY_MIN_BYTES && hStream != CU_STREAM_PER_THREAD
           ? lupine_client_transport_bulk_lanes(conn)
@@ -3871,8 +3868,7 @@ static CUresult lupine_copy_dtoh_pageable(conn_t *conn, void *dstHost,
     return lupine_bulk_pull(conn, lanes, dstHost, srcDevice, ByteCount,
                             hStream);
   }
-  if (rpc_write_start_request(
-          conn, lupine_implicit_stream_rpc(RPC_cuMemcpyDtoH_v2)) < 0 ||
+  if (rpc_write_start_request(conn, RPC_cuMemcpyDtoH_v2) < 0 ||
       rpc_write(conn, &srcDevice, sizeof(srcDevice)) < 0 ||
       rpc_write(conn, &ByteCount, sizeof(ByteCount)) < 0 ||
       rpc_write(conn, &hStream, sizeof(hStream)) < 0) {
@@ -3891,8 +3887,7 @@ extern "C" CUresult cuMemcpyDtoH_v2(void *dstHost, CUdeviceptr srcDevice,
                                     ByteCount);
   }
   return lupine_copy_dtoh_pageable(lupine_route_remote_conn(route), dstHost,
-                                   srcDevice, ByteCount,
-                                   lupine_implicit_stream());
+                                   srcDevice, ByteCount, CU_STREAM_LEGACY);
 }
 
 #ifdef cuMemcpyDtoH
@@ -4032,8 +4027,7 @@ extern "C" CUresult cuMemcpyHtoD_v2(CUdeviceptr dstDevice, const void *srcHost,
   uint64_t pushed_bytes =
       lupine_htod_pushed_bytes(is_server_authoritative, srcHost, ByteCount);
   lupine_bulk_lanes *lanes = nullptr;
-  if (!lupine_per_thread_default_stream && pushed_bytes == ByteCount &&
-      ByteCount >= LUPINE_BULK_COPY_MIN_BYTES &&
+  if (pushed_bytes == ByteCount && ByteCount >= LUPINE_BULK_COPY_MIN_BYTES &&
       !lupine_device_copy_uses_remote_callback(
           dstDevice, reinterpret_cast<CUdeviceptr>(srcHost))) {
     lanes = lupine_client_transport_bulk_lanes(conn);
@@ -4044,8 +4038,7 @@ extern "C" CUresult cuMemcpyHtoD_v2(CUdeviceptr dstDevice, const void *srcHost,
                        : lupine_bulk_push(conn, lanes, dstDevice, srcHost,
                                           ByteCount, false);
   } else if (lupine_prepare_rpc(conn) < 0 ||
-             rpc_write_start_request(
-                 conn, lupine_implicit_stream_rpc(RPC_cuMemcpyHtoD_v2)) < 0 ||
+             rpc_write_start_request(conn, RPC_cuMemcpyHtoD_v2) < 0 ||
              rpc_write(conn, &is_server_authoritative,
                        sizeof(is_server_authoritative)) < 0 ||
              rpc_write(conn, &dstDevice, sizeof(dstDevice)) < 0 ||
@@ -4195,10 +4188,9 @@ static CUresult lupine_memcpy_atoh(void *dstHost, CUarray srcArray,
   }
   conn_t *conn = lupine_route_remote_conn(route);
   if (lupine_prepare_rpc(conn) < 0 ||
-      rpc_write_start_request(
-          conn, hStream != nullptr
-                    ? RPC_cuMemcpyAtoHAsync_v2
-                    : lupine_implicit_stream_rpc(RPC_cuMemcpyAtoH_v2)) < 0 ||
+      rpc_write_start_request(conn, hStream != nullptr
+                                        ? RPC_cuMemcpyAtoHAsync_v2
+                                        : RPC_cuMemcpyAtoH_v2) < 0 ||
       rpc_write(conn, &srcArray, sizeof(srcArray)) < 0 ||
       rpc_write(conn, &srcOffset, sizeof(srcOffset)) < 0 ||
       rpc_write(conn, &ByteCount, sizeof(ByteCount)) < 0 ||
@@ -4459,7 +4451,7 @@ static CUresult lupine_memcpy3d(CUDA_MEMCPY3D copy, CUstream hStream,
                : CUDA_SUCCESS;
   }
   if (lupine_prepare_rpc(conn) < 0 ||
-      rpc_write_start_request(conn, lupine_implicit_stream_rpc(api.op)) < 0 ||
+      rpc_write_start_request(conn, api.op) < 0 ||
       rpc_write(conn, &direction, sizeof(direction)) < 0 ||
       (pull_source && rpc_write(conn, &is_server_authoritative,
                                 sizeof(is_server_authoritative)) < 0) ||
@@ -4562,14 +4554,6 @@ extern "C" CUresult cuMemcpy2DAsync(const CUDA_MEMCPY2D *pCopy,
   return cuMemcpy2DAsync_v2(pCopy, hStream);
 }
 
-#ifdef cuMemcpy2DAsync_ptsz
-#undef cuMemcpy2DAsync_ptsz
-#endif
-extern "C" CUresult cuMemcpy2DAsync_ptsz(const CUDA_MEMCPY2D *pCopy,
-                                         CUstream hStream) {
-  return cuMemcpy2DAsync_v2(pCopy, lupine_per_thread_stream(hStream));
-}
-
 extern "C" CUresult cuMemcpy3D_v2(const CUDA_MEMCPY3D *pCopy) {
   return pCopy == nullptr
              ? CUDA_ERROR_INVALID_VALUE
@@ -4609,12 +4593,4 @@ extern "C" CUresult cuMemcpy3D(const CUDA_MEMCPY3D *pCopy) {
 extern "C" CUresult cuMemcpy3DAsync(const CUDA_MEMCPY3D *pCopy,
                                     CUstream hStream) {
   return cuMemcpy3DAsync_v2(pCopy, hStream);
-}
-
-#ifdef cuMemcpy3DAsync_ptsz
-#undef cuMemcpy3DAsync_ptsz
-#endif
-extern "C" CUresult cuMemcpy3DAsync_ptsz(const CUDA_MEMCPY3D *pCopy,
-                                         CUstream hStream) {
-  return cuMemcpy3DAsync_v2(pCopy, lupine_per_thread_stream(hStream));
 }

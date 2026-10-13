@@ -5,16 +5,25 @@
 
 #include <cuda.h>
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
 
-#include "cuda_stream_identity.h"
 #include "rpc.h"
 #include "third_party/libcuckoo/libcuckoo/cuckoohash_map.hh"
 
 struct lupine_graph_resources;
+
+// Each server lane thread has its own per-thread default stream, so stream
+// bookkeeping keys that sentinel by lane. A lane key's low bits are 0b11, which
+// no handle has; compute it on the lane thread, not in a CUDA callback.
+inline CUstream lupine_stream_key(CUstream stream) {
+  alignas(4) static thread_local char lane;
+  auto key = reinterpret_cast<CUstream>(reinterpret_cast<uintptr_t>(&lane) | 3);
+  return stream == CU_STREAM_PER_THREAD ? key : stream;
+}
 
 struct lupine_host_callback_data {
   conn_t *conn = nullptr;
@@ -22,7 +31,6 @@ struct lupine_host_callback_data {
   void *userData = nullptr;
   lupine_graph_resources *resources = nullptr;
   std::optional<CUstream> stream;
-  lupine_stream_key stream_key;
   // Uncaptured launches run once; a captured one is replayed by its graph.
   bool one_shot = false;
 };
@@ -31,7 +39,7 @@ struct lupine_stream_callback_data {
   conn_t *conn = nullptr;
   CUstreamCallback callback = nullptr;
   void *userData = nullptr;
-  lupine_stream_key stream_key;
+  CUstream stream_key = nullptr;
 };
 
 void CUDA_CB lupine_graph_host_callback(void *userData);
@@ -85,8 +93,8 @@ void lupine_note_device_stdout_image(const unsigned char *image,
                                      size_t image_size);
 lupine_pending_dtoh_items
 lupine_detach_pending_dtoh_copies(conn_t *conn, CUstream stream,
-                                  bool all_streams, CUcontext context = nullptr,
-                                  const lupine_stream_key *identity = nullptr);
+                                  bool all_streams,
+                                  CUcontext context = nullptr);
 lupine_pending_dtoh_items lupine_detach_event_dtoh_copies(conn_t *conn,
                                                           CUevent event);
 int lupine_write_dtoh_rows(conn_t *conn, const lupine_host_rows &client,
@@ -101,15 +109,13 @@ void lupine_note_event_record(conn_t *conn, CUevent event, CUstream stream);
 void lupine_forget_event_dtoh_marker(conn_t *conn, CUevent event);
 
 using lupine_pending_dtoh_streams =
-    std::unordered_map<lupine_stream_key, lupine_pending_dtoh_items>;
+    std::unordered_map<CUstream, lupine_pending_dtoh_items>;
 
 libcuckoo::cuckoohash_map<conn_t *, lupine_pending_dtoh_streams> &
 lupine_pending_dtoh_copies();
 lupine_graph_resources *lupine_get_graph_resources(CUgraph graph);
 lupine_graph_resources *lupine_get_stream_resources(CUstream stream);
 lupine_graph_resources *lupine_find_stream_resources(CUstream stream);
-lupine_graph_resources *
-lupine_find_stream_resources(const lupine_stream_key &stream);
 lupine_graph_resources *lupine_captured_stream_resources(CUstream stream);
 lupine_graph_resources *lupine_begin_stream_capture_resources(CUstream stream);
 void lupine_discard_stream_capture_resources(lupine_graph_resources *resources);
