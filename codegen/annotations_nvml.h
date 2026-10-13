@@ -1272,7 +1272,7 @@ nvmlReturn_t nvmlDeviceGetGridLicensableFeatures_v4(
 /**
  * @param device SEND_ONLY
  * @param processSamplesCount SEND_RECV
- * @param utilization RECV_ONLY LENGTH:processSamplesCount
+ * @param utilization RECV_ONLY NULLABLE LENGTH:processSamplesCount ON_SUCCESS
  * @param lastSeenTimeStamp SEND_ONLY
  */
 nvmlReturn_t nvmlDeviceGetProcessUtilization(
