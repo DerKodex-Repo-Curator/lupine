@@ -2954,7 +2954,7 @@ static void *lupine_make_private_export_stub(int slot, const char *table_name) {
 #elif defined(__x86_64__)
   constexpr size_t stub_size = 52;
   unsigned char *code = static_cast<unsigned char *>(
-      mmap(nullptr, stub_size, PROT_READ | PROT_WRITE | PROT_EXEC,
+      mmap(nullptr, stub_size, PROT_READ | PROT_WRITE,
            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
   if (code == MAP_FAILED) {
     return reinterpret_cast<void *>(&lupine_unsupported_driver_api);
@@ -2990,6 +2990,14 @@ static void *lupine_make_private_export_stub(int slot, const char *table_name) {
       0xc3                    // ret
   };
   memcpy(code + offset, epilogue, sizeof(epilogue));
+  // Publish immutable executable code only after construction. macOS rejects
+  // anonymous mappings that request write and execute permissions together.
+  if (mprotect(code, stub_size, PROT_READ | PROT_EXEC) != 0) {
+    LUPINE_LOG_ERROR(
+        "Failed to protect private export trampoline: " << strerror(errno));
+    munmap(code, stub_size);
+    return reinterpret_cast<void *>(&lupine_unsupported_driver_api);
+  }
   return code;
 #elif defined(__aarch64__)
   // AAPCS64 mirror of the x86-64 thunk above: the six incoming integer/pointer
@@ -3003,7 +3011,7 @@ static void *lupine_make_private_export_stub(int slot, const char *table_name) {
   constexpr size_t stub_words = 17;
   constexpr size_t stub_size = stub_words * sizeof(uint32_t);
   unsigned char *code = static_cast<unsigned char *>(
-      mmap(nullptr, stub_size, PROT_READ | PROT_WRITE | PROT_EXEC,
+      mmap(nullptr, stub_size, PROT_READ | PROT_WRITE,
            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
   if (code == MAP_FAILED) {
     return reinterpret_cast<void *>(&lupine_unsupported_driver_api);
@@ -3043,6 +3051,14 @@ static void *lupine_make_private_export_stub(int slot, const char *table_name) {
   // fetcher.
   __builtin___clear_cache(reinterpret_cast<char *>(code),
                           reinterpret_cast<char *>(code + stub_size));
+  // Publish immutable executable code only after construction. macOS rejects
+  // anonymous mappings that request write and execute permissions together.
+  if (mprotect(code, stub_size, PROT_READ | PROT_EXEC) != 0) {
+    LUPINE_LOG_ERROR(
+        "Failed to protect private export trampoline: " << strerror(errno));
+    munmap(code, stub_size);
+    return reinterpret_cast<void *>(&lupine_unsupported_driver_api);
+  }
   return code;
 #else
   (void)slot;
@@ -8543,7 +8559,28 @@ extern "C" CUresult lupine_integrity_check(unsigned int version,
   uint32_t process_id = static_cast<uint32_t>(getpid());
   uint32_t thread_id =
       static_cast<uint32_t>(reinterpret_cast<uintptr_t>(pthread_self()));
+#ifdef __APPLE__
+  // A translated Linux runtime can carry its own pthread descriptor. The
+  // integrity exchange must use the caller's thread identity on both sides.
+  Dl_info caller_info = {};
+  if (dladdr(__builtin_return_address(0), &caller_info) != 0 &&
+      caller_info.dli_fname != nullptr) {
+    void *caller = dlopen(caller_info.dli_fname, RTLD_LAZY | RTLD_NOLOAD);
+    if (caller != nullptr) {
+      using caller_pthread_self_t = uintptr_t (*)();
+      auto caller_pthread_self = reinterpret_cast<caller_pthread_self_t>(
+          lupine_real_dlsym(caller, "pthread_self"));
+      if (caller_pthread_self != nullptr) {
+        thread_id = static_cast<uint32_t>(caller_pthread_self());
+      }
+      dlclose(caller);
+    }
+  }
 #endif
+#endif
+  LUPINE_TRACE_LOG("LUPINE integrity version="
+                   << version << " seconds=" << unix_seconds
+                   << " pid=" << process_id << " thread=" << thread_id);
   lupine_integrity_pass3_input input = {
       static_cast<uint32_t>(driver_version),
       version,
