@@ -8,6 +8,7 @@
 #include "cuda_compat.h"
 #undef LUPINE_CUDA_COMPAT_TYPES_ONLY
 
+#include "codegen/gen_cuda_streams.h"
 #include "rpc.h"
 #ifdef __linux__
 #include "device_ioctl_guard.h"
@@ -185,6 +186,11 @@ extern "C" void lupine_note_deviceptr_allocation_route(CUdeviceptr ptr,
 // Resolves a driver entry point once per call site; name must be a literal.
 #define LUPINE_REAL_CUDA_SYMBOL(name)                                          \
   ([] {                                                                        \
+    if (lupine_per_thread_default_stream) {                                    \
+      static void *const per_thread =                                          \
+          lupine_real_cuda_symbol(lupine_implicit_stream_symbol(name));        \
+      return per_thread;                                                       \
+    }                                                                          \
     static void *const real = lupine_real_cuda_symbol(name);                   \
     return real;                                                               \
   }())
@@ -207,7 +213,8 @@ template <typename Fn = void,
           typename... Args>
 static CUresult lupine_call_real_cuda_fn(const char *name, Args &&...args) {
   return lupine_call_real_cuda_fn<Fn, MissingSymbol>(
-      lupine_real_cuda_symbol(name), std::forward<Args>(args)...);
+      lupine_real_cuda_symbol(lupine_implicit_stream_symbol(name)),
+      std::forward<Args>(args)...);
 }
 
 template <CUresult MissingSymbol, typename... Args>

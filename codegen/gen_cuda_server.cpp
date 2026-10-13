@@ -12,6 +12,7 @@
 
 #include "cuda_server_memcpy.h"
 #include "device_stdout.h"
+#include "gen_cuda_streams_server.h"
 #include "rpc.h"
 
 #ifdef cuGraphInstantiate_v2
@@ -2009,8 +2010,8 @@ int handle_cuMemcpyPeer(conn_t *conn) {
   if (request_id < 0)
     goto ERROR_0;
 
-  return_value =
-      cuMemcpyPeer(dstDevice, dstContext, srcDevice, srcContext, ByteCount);
+  return_value = lupine_implicit_cuMemcpyPeer(dstDevice, dstContext, srcDevice,
+                                              srcContext, ByteCount);
 
   if (rpc_write_start_response(conn, request_id) < 0 ||
       rpc_write(conn, &return_value, sizeof(CUresult)) < 0 ||
@@ -2036,7 +2037,8 @@ int handle_cuMemcpyDtoD_v2(conn_t *conn) {
   if (request_id < 0)
     goto ERROR_0;
 
-  return_value = cuMemcpyDtoD_v2(dstDevice, srcDevice, ByteCount);
+  return_value =
+      lupine_implicit_cuMemcpyDtoD_v2(dstDevice, srcDevice, ByteCount);
 
   if (rpc_write_start_response(conn, request_id) < 0 ||
       rpc_write(conn, &return_value, sizeof(CUresult)) < 0 ||
@@ -2064,7 +2066,8 @@ int handle_cuMemcpyDtoA_v2(conn_t *conn) {
   if (request_id < 0)
     goto ERROR_0;
 
-  return_value = cuMemcpyDtoA_v2(dstArray, dstOffset, srcDevice, ByteCount);
+  return_value = lupine_implicit_cuMemcpyDtoA_v2(dstArray, dstOffset, srcDevice,
+                                                 ByteCount);
 
   if (rpc_write_start_response(conn, request_id) < 0 ||
       rpc_write(conn, &return_value, sizeof(CUresult)) < 0 ||
@@ -2092,7 +2095,8 @@ int handle_cuMemcpyAtoD_v2(conn_t *conn) {
   if (request_id < 0)
     goto ERROR_0;
 
-  return_value = cuMemcpyAtoD_v2(dstDevice, srcArray, srcOffset, ByteCount);
+  return_value = lupine_implicit_cuMemcpyAtoD_v2(dstDevice, srcArray, srcOffset,
+                                                 ByteCount);
 
   if (rpc_write_start_response(conn, request_id) < 0 ||
       rpc_write(conn, &return_value, sizeof(CUresult)) < 0 ||
@@ -2122,8 +2126,8 @@ int handle_cuMemcpyAtoA_v2(conn_t *conn) {
   if (request_id < 0)
     goto ERROR_0;
 
-  return_value =
-      cuMemcpyAtoA_v2(dstArray, dstOffset, srcArray, srcOffset, ByteCount);
+  return_value = lupine_implicit_cuMemcpyAtoA_v2(dstArray, dstOffset, srcArray,
+                                                 srcOffset, ByteCount);
 
   if (rpc_write_start_response(conn, request_id) < 0 ||
       rpc_write(conn, &return_value, sizeof(CUresult)) < 0 ||
@@ -2212,7 +2216,7 @@ int handle_cuMemsetD8_v2(conn_t *conn) {
   if (request_id < 0)
     goto ERROR_0;
 
-  return_value = cuMemsetD8_v2(dstDevice, uc, N);
+  return_value = lupine_implicit_cuMemsetD8_v2(dstDevice, uc, N);
 
   if (rpc_write_start_response(conn, request_id) < 0 ||
       rpc_write(conn, &return_value, sizeof(CUresult)) < 0 ||
@@ -2238,7 +2242,7 @@ int handle_cuMemsetD16_v2(conn_t *conn) {
   if (request_id < 0)
     goto ERROR_0;
 
-  return_value = cuMemsetD16_v2(dstDevice, us, N);
+  return_value = lupine_implicit_cuMemsetD16_v2(dstDevice, us, N);
 
   if (rpc_write_start_response(conn, request_id) < 0 ||
       rpc_write(conn, &return_value, sizeof(CUresult)) < 0 ||
@@ -2264,7 +2268,7 @@ int handle_cuMemsetD32_v2(conn_t *conn) {
   if (request_id < 0)
     goto ERROR_0;
 
-  return_value = cuMemsetD32_v2(dstDevice, ui, N);
+  return_value = lupine_implicit_cuMemsetD32_v2(dstDevice, ui, N);
 
   if (rpc_write_start_response(conn, request_id) < 0 ||
       rpc_write(conn, &return_value, sizeof(CUresult)) < 0 ||
@@ -2294,7 +2298,8 @@ int handle_cuMemsetD2D8_v2(conn_t *conn) {
   if (request_id < 0)
     goto ERROR_0;
 
-  return_value = cuMemsetD2D8_v2(dstDevice, dstPitch, uc, Width, Height);
+  return_value =
+      lupine_implicit_cuMemsetD2D8_v2(dstDevice, dstPitch, uc, Width, Height);
 
   if (rpc_write_start_response(conn, request_id) < 0 ||
       rpc_write(conn, &return_value, sizeof(CUresult)) < 0 ||
@@ -2324,7 +2329,8 @@ int handle_cuMemsetD2D16_v2(conn_t *conn) {
   if (request_id < 0)
     goto ERROR_0;
 
-  return_value = cuMemsetD2D16_v2(dstDevice, dstPitch, us, Width, Height);
+  return_value =
+      lupine_implicit_cuMemsetD2D16_v2(dstDevice, dstPitch, us, Width, Height);
 
   if (rpc_write_start_response(conn, request_id) < 0 ||
       rpc_write(conn, &return_value, sizeof(CUresult)) < 0 ||
@@ -2354,7 +2360,8 @@ int handle_cuMemsetD2D32_v2(conn_t *conn) {
   if (request_id < 0)
     goto ERROR_0;
 
-  return_value = cuMemsetD2D32_v2(dstDevice, dstPitch, ui, Width, Height);
+  return_value =
+      lupine_implicit_cuMemsetD2D32_v2(dstDevice, dstPitch, ui, Width, Height);
 
   if (rpc_write_start_response(conn, request_id) < 0 ||
       rpc_write(conn, &return_value, sizeof(CUresult)) < 0 ||
@@ -9504,4 +9511,95 @@ int handle_cuGraphExecUpdate(conn_t *conn) {
   return 0;
 ERROR_0:
   return -1;
+}
+
+int handle_cuMemcpy2DUnaligned_v2(conn_t *conn);
+int handle_cuMemcpy2DUnaligned_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemcpy2DUnaligned_v2(conn);
+}
+int handle_cuMemcpy2D_v2(conn_t *conn);
+int handle_cuMemcpy2D_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemcpy2D_v2(conn);
+}
+int handle_cuMemcpy3DPeer(conn_t *conn);
+int handle_cuMemcpy3DPeer_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemcpy3DPeer(conn);
+}
+int handle_cuMemcpy3D_v2(conn_t *conn);
+int handle_cuMemcpy3D_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemcpy3D_v2(conn);
+}
+int handle_cuMemcpyAtoA_v2(conn_t *conn);
+int handle_cuMemcpyAtoA_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemcpyAtoA_v2(conn);
+}
+int handle_cuMemcpyAtoD_v2(conn_t *conn);
+int handle_cuMemcpyAtoD_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemcpyAtoD_v2(conn);
+}
+int handle_cuMemcpyAtoH_v2(conn_t *conn);
+int handle_cuMemcpyAtoH_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemcpyAtoH_v2(conn);
+}
+int handle_cuMemcpyDtoA_v2(conn_t *conn);
+int handle_cuMemcpyDtoA_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemcpyDtoA_v2(conn);
+}
+int handle_cuMemcpyDtoD_v2(conn_t *conn);
+int handle_cuMemcpyDtoD_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemcpyDtoD_v2(conn);
+}
+int handle_cuMemcpyDtoH_v2(conn_t *conn);
+int handle_cuMemcpyDtoH_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemcpyDtoH_v2(conn);
+}
+int handle_cuMemcpyHtoD_v2(conn_t *conn);
+int handle_cuMemcpyHtoD_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemcpyHtoD_v2(conn);
+}
+int handle_cuMemcpyPeer(conn_t *conn);
+int handle_cuMemcpyPeer_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemcpyPeer(conn);
+}
+int handle_cuMemsetD16_v2(conn_t *conn);
+int handle_cuMemsetD16_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemsetD16_v2(conn);
+}
+int handle_cuMemsetD2D16_v2(conn_t *conn);
+int handle_cuMemsetD2D16_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemsetD2D16_v2(conn);
+}
+int handle_cuMemsetD2D32_v2(conn_t *conn);
+int handle_cuMemsetD2D32_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemsetD2D32_v2(conn);
+}
+int handle_cuMemsetD2D8_v2(conn_t *conn);
+int handle_cuMemsetD2D8_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemsetD2D8_v2(conn);
+}
+int handle_cuMemsetD32_v2(conn_t *conn);
+int handle_cuMemsetD32_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemsetD32_v2(conn);
+}
+int handle_cuMemsetD8_v2(conn_t *conn);
+int handle_cuMemsetD8_v2_ptds(conn_t *conn) {
+  lupine_per_thread_stream_scope scope;
+  return handle_cuMemsetD8_v2(conn);
 }
