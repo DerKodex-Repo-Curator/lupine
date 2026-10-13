@@ -408,6 +408,8 @@ CUDA = Backend(
     # point directly instead of resolving it by name.
     symbol_lookup="",
     not_supported="CUDA_ERROR_NOT_SUPPORTED",
+    success="CUDA_SUCCESS",
+    invalid_result="CUDA_ERROR_UNKNOWN",
 )
 
 NVML = Backend(
@@ -685,19 +687,20 @@ def parse_annotation(
                 null_terminated = "NULL_TERMINATED" in args
                 nullable = "NULLABLE" in args
                 deref = "DEREF" in args
-                recv_on_error = "ON_ERROR" in args
-                recv_on_success = "ON_SUCCESS" in args
+                if "ON_SUCCESS" in args and "ON_ERROR" in args:
+                    raise NotImplementedError("ON_SUCCESS and ON_ERROR are mutually exclusive")
+                recv_on = next((arg for arg in args if arg in ("ON_SUCCESS", "ON_ERROR")), None)
                 scalar_arg = next(
                     (arg for arg in args if arg.split(":")[0] == "SCALAR"), None
                 )
-                if recv_on_success and (recv_on_error or deref or scalar_arg
-                                        or "VERSIONED" in args or size_arg
-                                        or null_terminated or not (
-                    nullable and length_arg and recv and not send
-                )):
+                if recv_on and (
+                    deref or scalar_arg or "VERSIONED" in args or size_arg
+                    or null_terminated
+                    or not (nullable and length_arg and recv and not send)
+                ):
                     raise NotImplementedError(
-                        "ON_SUCCESS requires a RECV_ONLY NULLABLE LENGTH out-array "
-                        "without conflicting transfer modifiers"
+                        "ON_SUCCESS/ON_ERROR require a RECV_ONLY NULLABLE LENGTH "
+                        "out-array without conflicting transfer modifiers"
                     )
 
                 if "VERSIONED" in args:
@@ -772,12 +775,6 @@ def parse_annotation(
                     raise NotImplementedError(
                         "Only one of LENGTH, SIZE, NULL_TERMINATED, or NULLABLE can be specified (except NULLABLE LENGTH)"
                     )
-                if recv_on_error and not (
-                    nullable and length_arg and recv and not send
-                ):
-                    raise NotImplementedError(
-                        "ON_ERROR requires a RECV_ONLY NULLABLE LENGTH out-array"
-                    )
 
                 if deref:
                     operations.append(
@@ -828,8 +825,7 @@ def parse_annotation(
                                 parameter=param,
                                 ptr=param.type,
                                 count=length_param,
-                                recv_on_error=recv_on_error,
-                                recv_on_success=recv_on_success,
+                                recv_on=recv_on,
                             )
                         )
                     else:
