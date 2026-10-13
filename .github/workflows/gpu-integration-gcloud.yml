@@ -260,10 +260,10 @@ jobs:
           fallback_zones=($GCP_FALLBACK_ZONES)
           candidate_zones=("$GCP_ZONE" "${fallback_zones[@]}")
 
-          vm_ip=""
-          selected_zone=""
-          for zone in "${candidate_zones[@]}"; do
-            echo "Creating $MACHINE_TYPE in $zone"
+          # A stocked-out zone takes ~12s to refuse, so each region's zones are
+          # tried at once. A second zone that also succeeds is deleted right away.
+          create_in_zone() {
+            local zone="$1"
             create_args=(
               "$VM_NAME"
               "--project=$GCP_PROJECT_ID"
@@ -291,17 +291,40 @@ jobs:
               create_args+=("--provisioning-model=SPOT")
             fi
 
-            if vm_ip="$(gcloud compute instances create "${create_args[@]}" \
-              --format='value(networkInterfaces[0].accessConfigs[0].natIP)')"; then
-              selected_zone="$zone"
-              break
-            fi
+            gcloud compute instances create "${create_args[@]}" \
+              --format='value(networkInterfaces[0].accessConfigs[0].natIP)' \
+              > "$RUNNER_TEMP/vm-ip-$zone" || \
+              echo "Could not create $MACHINE_TYPE in $zone" >&2
+          }
 
-            echo "Could not create $MACHINE_TYPE in $zone; trying next candidate zone" >&2
-            gcloud compute instances delete "$VM_NAME" \
-              --project="$GCP_PROJECT_ID" \
-              --zone="$zone" \
-              --quiet >/dev/null 2>&1 || true
+          vm_ip=""
+          selected_zone=""
+          remaining=("${candidate_zones[@]}")
+          while [[ -z "$selected_zone" && "${#remaining[@]}" -gt 0 ]]; do
+            region="${remaining[0]%-*}"
+            zones=()
+            rest=()
+            for zone in "${remaining[@]}"; do
+              if [[ "${zone%-*}" == "$region" ]]; then zones+=("$zone"); else rest+=("$zone"); fi
+            done
+            remaining=("${rest[@]}")
+
+            echo "Creating $MACHINE_TYPE in ${zones[*]}"
+            for zone in "${zones[@]}"; do
+              create_in_zone "$zone" &
+            done
+            wait
+
+            for zone in "${zones[@]}"; do
+              ip="$(cat "$RUNNER_TEMP/vm-ip-$zone" 2>/dev/null || true)"
+              if [[ -n "$ip" && -z "$selected_zone" ]]; then
+                vm_ip="$ip"
+                selected_zone="$zone"
+              else
+                gcloud compute instances delete "$VM_NAME" \
+                  --project="$GCP_PROJECT_ID" --zone="$zone" --quiet --async >/dev/null 2>&1 || true
+              fi
+            done
           done
 
           test -n "$vm_ip"
@@ -866,12 +889,14 @@ jobs:
           fallback_zones=($GCP_FALLBACK_ZONES)
           candidate_zones=("$GCP_ZONE" "${fallback_zones[@]}")
 
+          # Waiting out the instance delete adds most of a minute. The VM's
+          # max-run-duration still deletes it if this request is lost.
           delete_pids=()
           for zone in "${candidate_zones[@]}"; do
             gcloud compute instances delete "$VM_NAME" \
               --project="$GCP_PROJECT_ID" \
               --zone="$zone" \
-              --quiet &
+              --quiet --async &
             delete_pids+=("$!")
           done
 
@@ -888,13 +913,6 @@ jobs:
 
           leftovers=0
           check_pids=()
-          for zone in "${candidate_zones[@]}"; do
-            (! gcloud compute instances describe "$VM_NAME" \
-              --project="$GCP_PROJECT_ID" \
-              --zone="$zone" >/dev/null 2>&1) &
-            check_pids+=("$!")
-          done
-
           for rule in "$FIREWALL_ALLOW_RULE" "$FIREWALL_DENY_RULE"; do
             (! gcloud compute firewall-rules describe "$rule" \
               --project="$GCP_PROJECT_ID" >/dev/null 2>&1) &
